@@ -36,3 +36,9 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Environment files ###
+.env
+logs.log
+journals.db*
+test-journals.db*

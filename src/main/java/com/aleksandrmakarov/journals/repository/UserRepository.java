@@ -1,0 +1,125 @@
+package com.aleksandrmakarov.journals.repository;
+
+import com.aleksandrmakarov.journals.model.User;
+import com.aleksandrmakarov.journals.model.UserRole;
+import com.aleksandrmakarov.journals.util.TimestampUtils;
+import jakarta.annotation.PostConstruct;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Repository for managing User entities in the database. Provides CRUD operations and specialized
+ * queries for user management. Uses JdbcTemplate for direct SQL operations with SQLite.
+ */
+@Repository
+@RequiredArgsConstructor
+public class UserRepository {
+
+  private final JdbcTemplate jdbcTemplate;
+
+  private RowMapper<User> userRowMapper;
+
+  @PostConstruct
+  private void initRowMapper() {
+    this.userRowMapper =
+        (rs, rowNum) -> {
+          long timestampMillis = rs.getLong("created_at");
+          LocalDateTime dateTime = TimestampUtils.fromMillis(timestampMillis);
+          return new User(
+              rs.getLong("id"),
+              rs.getLong("telegram_id"),
+              rs.getString("username"),
+              rs.getString("first_name"),
+              rs.getString("last_name"),
+              UserRole.valueOf(rs.getString("role")),
+              dateTime);
+        };
+  }
+
+  /**
+   * Finds a user by their Telegram ID.
+   *
+   * @param telegramId The Telegram user ID to search for
+   * @return Optional containing the user if found, empty otherwise
+   */
+  public Optional<User> findByTelegramId(Long telegramId) {
+    List<User> users =
+        jdbcTemplate.query("SELECT * FROM users WHERE telegram_id = ?", userRowMapper, telegramId);
+    return users.stream().findFirst();
+  }
+
+  /**
+   * Saves a user to the database. If the user has no ID, creates a new record. Otherwise, updates
+   * existing record.
+   *
+   * @param user The user to save
+   * @return The saved user with generated ID if new
+   */
+  public User save(User user) {
+    if (user.id() == null) {
+      // Insert new user
+      jdbcTemplate.update(
+          "INSERT INTO users (telegram_id, username, first_name, last_name, role, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+          user.telegramId(),
+          user.username(),
+          user.firstName(),
+          user.lastName(),
+          user.role().name(),
+          TimestampUtils.toMillis(user.createdAt()));
+      Long id = jdbcTemplate.queryForObject("SELECT last_insert_rowid()", Long.class);
+      return new User(
+          id,
+          user.telegramId(),
+          user.username(),
+          user.firstName(),
+          user.lastName(),
+          user.role(),
+          user.createdAt());
+    } else {
+      // Update existing user
+      jdbcTemplate.update(
+          "UPDATE users SET username = ?, first_name = ?, last_name = ?, role = ? WHERE id = ?",
+          user.username(),
+          user.firstName(),
+          user.lastName(),
+          user.role().name(),
+          user.id());
+      return user;
+    }
+  }
+
+  /**
+   * Finds all players ordered by their last journal entry date. Players with no journals appear
+   * last in the list.
+   *
+   * @return List of players sorted by last journal date (most recent first)
+   */
+  public List<User> findPlayersOrderedByLastJournal() {
+    return jdbcTemplate.query(
+        "SELECT u.* FROM users u "
+            + "LEFT JOIN journals j ON u.id = j.user_id "
+            + "WHERE u.role = 'PLAYER' "
+            + "GROUP BY u.id "
+            + "ORDER BY MAX(j.created_at) DESC NULLS LAST",
+        userRowMapper);
+  }
+
+  /**
+   * Counts the total number of users in the database.
+   *
+   * @return Total number of users
+   */
+  public long count() {
+    return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+  }
+
+  /** Deletes all users from the database. Used primarily for testing. */
+  public void deleteAll() {
+    jdbcTemplate.update("DELETE FROM users");
+  }
+}

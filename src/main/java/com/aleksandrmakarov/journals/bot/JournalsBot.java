@@ -1,0 +1,90 @@
+package com.aleksandrmakarov.journals.bot;
+
+import com.aleksandrmakarov.journals.model.User;
+import com.aleksandrmakarov.journals.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.telegram.telegrambots.bots.TelegramWebhookBot;
+import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+/** TTelegram bot that handles commands and messages from users. */
+public class JournalsBot extends TelegramWebhookBot {
+
+  private static final Logger logger = LoggerFactory.getLogger(JournalsBot.class);
+
+  @Autowired private UserService userService;
+
+  @Autowired private BotCommandHandler commandHandler;
+
+  private final String botToken;
+  private final String botUsername;
+  private final String webhookPath;
+
+  public JournalsBot(String botToken, String botUsername, String webhookPath) {
+    super(botToken);
+    this.botToken = botToken;
+    this.botUsername = botUsername;
+    this.webhookPath = webhookPath;
+  }
+
+  @Override
+  public String getBotUsername() {
+    return botUsername;
+  }
+
+  @Override
+  public String getBotToken() {
+    return this.botToken;
+  }
+
+  @Override
+  public String getBotPath() {
+    return webhookPath;
+  }
+
+  @Override
+  public BotApiMethod<?> onWebhookUpdateReceived(Update update) {
+    logger.debug("Received webhook update: {}", update.getUpdateId());
+
+    if (update.hasMessage() && update.getMessage().getText() != null) {
+      String messageText = update.getMessage().getText();
+      Long chatId = update.getMessage().getChatId();
+      Long userId = update.getMessage().getFrom().getId();
+      String username = update.getMessage().getFrom().getUserName();
+      String firstName = update.getMessage().getFrom().getFirstName();
+      String lastName = update.getMessage().getFrom().getLastName();
+
+      logger.info("Processing message from user {} ({}): '{}'", userId, username, messageText);
+
+      // Register or update user
+      User user = userService.findOrCreateUser(userId, username, firstName, lastName);
+      logger.debug("User {} found/created with role: {}", userId, user.role());
+
+      try {
+        String response = commandHandler.handleCommand(messageText, user, update);
+        logger.info(
+            "Command processed successfully for user {}. Response length: {}",
+            userId,
+            response.length());
+        return createSendMessage(chatId, response);
+      } catch (Exception e) {
+        logger.error("Error processing command for user {}: {}", userId, e.getMessage(), e);
+        return createSendMessage(chatId, "Sorry, an error occurred. Please try again.");
+      }
+    } else {
+      logger.debug("Received update without text message: {}", update.getUpdateId());
+    }
+    return null;
+  }
+
+  private SendMessage createSendMessage(Long chatId, String text) {
+    SendMessage message = new SendMessage();
+    message.setChatId(chatId.toString());
+    message.setText(text);
+    message.setParseMode("HTML");
+    return message;
+  }
+}

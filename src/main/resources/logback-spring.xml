@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<!-- Console appender -->
+	<appender name="CONSOLE"
+		class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{25} -
+				%msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<!-- File appender - simple file with recreation on each run -->
+	<appender name="FILE" class="ch.qos.logback.core.FileAppender">
+		<file>logs.log</file>
+		<append>false</append>
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} -
+				%msg%n</pattern>
+		</encoder>
+	</appender>
+
+	<!-- Application specific loggers -->
+	<logger name="com.aleksandrmakarov.journals" level="INFO"
+		additivity="false">
+		<appender-ref ref="CONSOLE" />
+		<appender-ref ref="FILE" />
+	</logger>
+
+	<!-- Telegram bot specific logging -->
+	<logger name="org.telegram.telegrambots" level="INFO"
+		additivity="false">
+		<appender-ref ref="CONSOLE" />
+		<appender-ref ref="FILE" />
+	</logger>
+
+	<!-- SQL logging - single line format -->
+	<logger name="org.springframework.jdbc.core.JdbcTemplate" level="DEBUG"
+		additivity="false">
+		<appender-ref ref="CONSOLE" />
+		<appender-ref ref="FILE" />
+	</logger>
+
+	<!-- Root logger -->
+	<root level="INFO">
+		<appender-ref ref="CONSOLE" />
+		<appender-ref ref="FILE" />
+	</root>
+
+	<!-- Profile specific configurations -->
+	<springProfile name="!prod">
+		<logger name="com.aleksandrmakarov.journals" level="DEBUG" />
+	</springProfile>
+
+	<springProfile name="prod">
+		<logger name="com.aleksandrmakarov.journals" level="INFO" />
+		<logger name="org.springframework" level="WARN" />
+	</springProfile>
+</configuration>
