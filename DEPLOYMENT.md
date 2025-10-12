@@ -6,7 +6,6 @@ Set the following environment variables:
 
 - `TELEGRAM_BOT_TOKEN`: Your Telegram bot token from @BotFather
 - `TELEGRAM_BOT_USERNAME`: Your bot username (without @)
-- `TELEGRAM_WEBHOOK_URL`: Webhook URL for production (optional)
 - `PORT`: Server port (default: 8080)
 
 ## Local Development
@@ -28,7 +27,7 @@ export TELEGRAM_BOT_USERNAME="your_bot_username"
 
 1. Create a ConfigMap with your bot credentials
 2. Deploy with the health check endpoint: `/health`
-3. Configure webhook URL if using webhook mode instead of polling
+3. Set webhook URL with Telegram API after deployment
 
 ### Docker
 

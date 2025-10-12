@@ -3,7 +3,6 @@ package com.aleksandrmakarov.journals.repository;
 import com.aleksandrmakarov.journals.model.Session;
 import com.aleksandrmakarov.journals.util.TimestampUtils;
 import jakarta.annotation.PostConstruct;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -27,9 +26,10 @@ public class SessionRepository {
   private void initRowMapper() {
     this.sessionRowMapper =
         (rs, rowNum) -> {
-          long timestampMillis = rs.getLong("date");
-          LocalDateTime dateTime = TimestampUtils.fromMillis(timestampMillis);
-          return new Session(rs.getLong("id"), dateTime, rs.getBoolean("is_active"));
+          return new Session(
+              rs.getLong("id"),
+              TimestampUtils.fromTimestamp(rs.getTimestamp("date")),
+              rs.getBoolean("is_active"));
         };
   }
 
@@ -56,7 +56,7 @@ public class SessionRepository {
       // Insert new session
       jdbcTemplate.update(
           "INSERT INTO sessions (date, is_active) VALUES (?, ?)",
-          TimestampUtils.toMillis(session.date()),
+          TimestampUtils.toTimestamp(session.date()),
           session.isActive());
       Long id = jdbcTemplate.queryForObject("SELECT last_insert_rowid()", Long.class);
       return new Session(id, session.date(), session.isActive());
@@ -64,7 +64,7 @@ public class SessionRepository {
       // Update existing session
       jdbcTemplate.update(
           "UPDATE sessions SET date = ?, is_active = ? WHERE id = ?",
-          TimestampUtils.toMillis(session.date()),
+          TimestampUtils.toTimestamp(session.date()),
           session.isActive(),
           session.id());
       return session;

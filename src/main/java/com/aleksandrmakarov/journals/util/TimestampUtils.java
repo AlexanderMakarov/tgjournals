@@ -1,7 +1,7 @@
 package com.aleksandrmakarov.journals.util;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import lombok.experimental.UtilityClass;
 
 /** Service for handling timestamp conversions between database and Java objects. */
@@ -9,25 +9,22 @@ import lombok.experimental.UtilityClass;
 public class TimestampUtils {
 
   /**
-   * Converts a millisecond timestamp from the database to LocalDateTime. Uses the system default
-   * timezone for conversion.
+   * Converts a DATETIME timestamp from the database to LocalDateTime.
    *
-   * @param timestampMillis The timestamp in milliseconds from epoch
+   * @param timestamp The timestamp from the database
    * @return LocalDateTime representation of the timestamp
    */
-  public LocalDateTime fromMillis(long timestampMillis) {
-    return LocalDateTime.ofInstant(
-        java.time.Instant.ofEpochMilli(timestampMillis), ZoneId.systemDefault());
+  public LocalDateTime fromTimestamp(Timestamp timestamp) {
+    return timestamp != null ? timestamp.toLocalDateTime() : null;
   }
 
   /**
-   * Converts a LocalDateTime to millisecond timestamp for database storage. Uses the system default
-   * timezone for conversion.
+   * Converts a LocalDateTime to DATETIME timestamp for database storage.
    *
    * @param dateTime The LocalDateTime to convert
-   * @return The timestamp in milliseconds from epoch
+   * @return The timestamp for database storage
    */
-  public long toMillis(LocalDateTime dateTime) {
-    return dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+  public Timestamp toTimestamp(LocalDateTime dateTime) {
+    return dateTime != null ? Timestamp.valueOf(dateTime) : null;
   }
 }

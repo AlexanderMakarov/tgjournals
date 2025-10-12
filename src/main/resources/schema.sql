@@ -9,13 +9,13 @@ CREATE TABLE IF NOT EXISTS users (
     first_name TEXT,
     last_name TEXT,
     role TEXT NOT NULL CHECK (role IN ('COACH', 'PLAYER')),
-    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Sessions table
 CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+    date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     is_active BOOLEAN NOT NULL DEFAULT 1
 );
 
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS questions (
 CREATE TABLE IF NOT EXISTS journals (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     answer TEXT NOT NULL,
-    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     user_id INTEGER NOT NULL,
     session_id INTEGER NOT NULL,
     question_id INTEGER NOT NULL,

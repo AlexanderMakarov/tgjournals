@@ -4,7 +4,6 @@ import com.aleksandrmakarov.journals.model.User;
 import com.aleksandrmakarov.journals.model.UserRole;
 import com.aleksandrmakarov.journals.util.TimestampUtils;
 import jakarta.annotation.PostConstruct;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -28,8 +27,6 @@ public class UserRepository {
   private void initRowMapper() {
     this.userRowMapper =
         (rs, rowNum) -> {
-          long timestampMillis = rs.getLong("created_at");
-          LocalDateTime dateTime = TimestampUtils.fromMillis(timestampMillis);
           return new User(
               rs.getLong("id"),
               rs.getLong("telegram_id"),
@@ -37,7 +34,7 @@ public class UserRepository {
               rs.getString("first_name"),
               rs.getString("last_name"),
               UserRole.valueOf(rs.getString("role")),
-              dateTime);
+              TimestampUtils.fromTimestamp(rs.getTimestamp("created_at")));
         };
   }
 
@@ -70,7 +67,7 @@ public class UserRepository {
           user.firstName(),
           user.lastName(),
           user.role().name(),
-          TimestampUtils.toMillis(user.createdAt()));
+          TimestampUtils.toTimestamp(user.createdAt()));
       Long id = jdbcTemplate.queryForObject("SELECT last_insert_rowid()", Long.class);
       return new User(
           id,

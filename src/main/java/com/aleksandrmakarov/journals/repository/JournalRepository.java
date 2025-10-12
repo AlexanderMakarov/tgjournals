@@ -3,7 +3,6 @@ package com.aleksandrmakarov.journals.repository;
 import com.aleksandrmakarov.journals.model.Journal;
 import com.aleksandrmakarov.journals.util.TimestampUtils;
 import jakarta.annotation.PostConstruct;
-import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -22,12 +21,10 @@ public class JournalRepository {
   private void initRowMapper() {
     this.journalRowMapper =
         (rs, rowNum) -> {
-          long timestampMillis = rs.getLong("created_at");
-          LocalDateTime dateTime = TimestampUtils.fromMillis(timestampMillis);
           return new Journal(
               rs.getLong("id"),
               rs.getString("answer"),
-              dateTime,
+              TimestampUtils.fromTimestamp(rs.getTimestamp("created_at")),
               rs.getLong("user_id"),
               rs.getLong("session_id"),
               rs.getLong("question_id"));
@@ -40,7 +37,7 @@ public class JournalRepository {
       jdbcTemplate.update(
           "INSERT INTO journals (answer, created_at, user_id, session_id, question_id) VALUES (?, ?, ?, ?, ?)",
           journal.answer(),
-          TimestampUtils.toMillis(journal.createdAt()),
+          TimestampUtils.toTimestamp(journal.createdAt()),
           journal.userId(),
           journal.sessionId(),
           journal.questionId());
@@ -57,7 +54,7 @@ public class JournalRepository {
       jdbcTemplate.update(
           "UPDATE journals SET answer = ?, created_at = ?, user_id = ?, session_id = ?, question_id = ? WHERE id = ?",
           journal.answer(),
-          TimestampUtils.toMillis(journal.createdAt()),
+          TimestampUtils.toTimestamp(journal.createdAt()),
           journal.userId(),
           journal.sessionId(),
           journal.questionId(),

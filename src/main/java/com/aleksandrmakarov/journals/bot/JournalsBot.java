@@ -10,7 +10,7 @@ import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
-/** TTelegram bot that handles commands and messages from users. */
+/** Telegram bot that handles commands and messages from users. */
 public class JournalsBot extends TelegramWebhookBot {
 
   private static final Logger logger = LoggerFactory.getLogger(JournalsBot.class);
@@ -66,12 +66,14 @@ public class JournalsBot extends TelegramWebhookBot {
       try {
         String response = commandHandler.handleCommand(messageText, user, update);
         logger.info(
-            "Command processed successfully for user {}. Response length: {}",
+            "Command processed successfully for user {} ({}). Response length: {}",
             userId,
+            username,
             response.length());
         return createSendMessage(chatId, response);
       } catch (Exception e) {
-        logger.error("Error processing command for user {}: {}", userId, e.getMessage(), e);
+        logger.error(
+            "Error processing command for user {} ({}): {}", userId, username, e.getMessage(), e);
         return createSendMessage(chatId, "Sorry, an error occurred. Please try again.");
       }
     } else {
