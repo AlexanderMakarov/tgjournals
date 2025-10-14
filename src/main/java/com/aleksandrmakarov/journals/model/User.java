@@ -21,7 +21,12 @@ public record User(
     String firstName,
     String lastName,
     UserRole role,
-    LocalDateTime createdAt) {
+    LocalDateTime createdAt,
+    StateType stateType,
+    Long stateSessionId,
+    Integer stateQuestionIndex,
+    LocalDateTime stateUpdatedAt) {
+
   /**
    * Returns a formatted display name for the user. Combines first and last name, or falls back to
    * username, or "Unknown".

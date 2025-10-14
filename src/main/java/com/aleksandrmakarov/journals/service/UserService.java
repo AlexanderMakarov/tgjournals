@@ -1,5 +1,6 @@
 package com.aleksandrmakarov.journals.service;
 
+import com.aleksandrmakarov.journals.model.StateType;
 import com.aleksandrmakarov.journals.model.User;
 import com.aleksandrmakarov.journals.model.UserRole;
 import com.aleksandrmakarov.journals.repository.UserRepository;
@@ -21,7 +22,7 @@ public class UserService {
     Optional<User> existingUser = userRepository.findByTelegramId(telegramId);
     if (existingUser.isPresent()) {
       User user = existingUser.get();
-      // Update user info if changed
+      // Update user info if changed.
       if (!username.equals(user.username())
           || !firstName.equals(user.firstName())
           || !lastName.equals(user.lastName())) {
@@ -33,12 +34,16 @@ public class UserService {
                 firstName,
                 lastName,
                 user.role(),
-                user.createdAt());
+                user.createdAt(),
+                user.stateType(),
+                user.stateSessionId(),
+                user.stateQuestionIndex(),
+                user.stateUpdatedAt());
         return userRepository.save(updatedUser);
       }
       return user;
     } else {
-      // Create new user as player by default
+      // Create new user as a player.
       User newUser =
           new User(
               null,
@@ -47,7 +52,11 @@ public class UserService {
               firstName,
               lastName,
               UserRole.PLAYER,
-              LocalDateTime.now());
+              LocalDateTime.now(),
+              null,
+              null,
+              null,
+              null);
       return userRepository.save(newUser);
     }
   }
@@ -70,8 +79,12 @@ public class UserService {
               user.username(),
               user.firstName(),
               user.lastName(),
-              UserRole.COACH,
-              user.createdAt());
+              UserRole.ADMIN,
+              user.createdAt(),
+              user.stateType(),
+              user.stateSessionId(),
+              user.stateQuestionIndex(),
+              user.stateUpdatedAt());
       userRepository.save(updatedUser);
     }
   }
@@ -94,15 +107,50 @@ public class UserService {
                 firstName,
                 lastName,
                 role,
-                user.createdAt());
+                user.createdAt(),
+                user.stateType(),
+                user.stateSessionId(),
+                user.stateQuestionIndex(),
+                user.stateUpdatedAt());
         return userRepository.save(updatedUser);
       }
       return user;
     } else {
       // Create new user with specified role
       User newUser =
-          new User(null, telegramId, username, firstName, lastName, role, LocalDateTime.now());
+          new User(
+              null,
+              telegramId,
+              username,
+              firstName,
+              lastName,
+              role,
+              LocalDateTime.now(),
+              null,
+              null,
+              null,
+              null);
       return userRepository.save(newUser);
     }
   }
+
+  // --------------- User state operations moved here ---------------
+
+  public void setQuestionFlowState(Long userId, Long sessionId, int questionIndex) {
+    userRepository.upsertState(userId, StateType.QA_FLOW, sessionId, questionIndex);
+  }
+
+  public void clearQuestionFlowState(Long userId) {
+    userRepository.clearState(userId);
+  }
+
+  public void setQuestionUpdateMode(Long userId, Long sessionId) {
+    userRepository.upsertState(userId, StateType.QUESTION_UPDATE, sessionId, null);
+  }
+
+  public void clearQuestionUpdateMode(Long userId) {
+    userRepository.clearState(userId);
+  }
+
+  // No read method needed here; the `User` entity carries state fields when loaded
 }

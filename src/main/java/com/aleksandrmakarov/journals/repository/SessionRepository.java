@@ -28,8 +28,11 @@ public class SessionRepository {
         (rs, rowNum) -> {
           return new Session(
               rs.getLong("id"),
-              TimestampUtils.fromTimestamp(rs.getTimestamp("date")),
-              rs.getBoolean("is_active"));
+              rs.getString("name"),
+              TimestampUtils.fromTimestamp(rs.getTimestamp("created_at")),
+              rs.getTimestamp("finished_at") != null
+                  ? TimestampUtils.fromTimestamp(rs.getTimestamp("finished_at"))
+                  : null);
         };
   }
 
@@ -38,9 +41,9 @@ public class SessionRepository {
    *
    * @return Optional containing the active session if found, empty otherwise
    */
-  public Optional<Session> findByIsActiveTrue() {
+  public Optional<Session> findActiveSession() {
     List<Session> sessions =
-        jdbcTemplate.query("SELECT * FROM sessions WHERE is_active = 1", sessionRowMapper);
+        jdbcTemplate.query("SELECT * FROM sessions WHERE finished_at IS NULL", sessionRowMapper);
     return sessions.stream().findFirst();
   }
 
@@ -55,28 +58,31 @@ public class SessionRepository {
     if (session.id() == null) {
       // Insert new session
       jdbcTemplate.update(
-          "INSERT INTO sessions (date, is_active) VALUES (?, ?)",
-          TimestampUtils.toTimestamp(session.date()),
-          session.isActive());
+          "INSERT INTO sessions (name, created_at, finished_at) VALUES (?, ?, ?)",
+          session.name(),
+          TimestampUtils.toTimestamp(session.createdAt()),
+          session.finishedAt() != null ? TimestampUtils.toTimestamp(session.finishedAt()) : null);
       Long id = jdbcTemplate.queryForObject("SELECT last_insert_rowid()", Long.class);
-      return new Session(id, session.date(), session.isActive());
+      return new Session(id, session.name(), session.createdAt(), session.finishedAt());
     } else {
       // Update existing session
       jdbcTemplate.update(
-          "UPDATE sessions SET date = ?, is_active = ? WHERE id = ?",
-          TimestampUtils.toTimestamp(session.date()),
-          session.isActive(),
+          "UPDATE sessions SET name = ?, created_at = ?, finished_at = ? WHERE id = ?",
+          session.name(),
+          TimestampUtils.toTimestamp(session.createdAt()),
+          session.finishedAt() != null ? TimestampUtils.toTimestamp(session.finishedAt()) : null,
           session.id());
       return session;
     }
   }
 
   /**
-   * Deactivates all sessions by setting is_active to false. Used when creating a new active
+   * Finishes all active sessions by setting finished_at timestamp. Used when creating a new active
    * session.
    */
-  public void deactivateAllSessions() {
-    jdbcTemplate.update("UPDATE sessions SET is_active = 0");
+  public void finishAllActiveSessions() {
+    jdbcTemplate.update(
+        "UPDATE sessions SET finished_at = CURRENT_TIMESTAMP WHERE finished_at IS NULL");
   }
 
   /**
@@ -85,7 +91,19 @@ public class SessionRepository {
    * @return Total number of sessions
    */
   public long count() {
-    return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sessions", Long.class);
+    Long result = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM sessions", Long.class);
+    return result != null ? result : 0L;
+  }
+
+  /**
+   * Finds finished sessions ordered by creation date (most recent first).
+   *
+   * @return List of finished sessions ordered by created_at DESC
+   */
+  public List<Session> findFinishedSessionsOrderedByCreatedAt() {
+    return jdbcTemplate.query(
+        "SELECT * FROM sessions WHERE finished_at IS NOT NULL ORDER BY created_at DESC",
+        sessionRowMapper);
   }
 
   /** Deletes all sessions from the database. Used primarily for testing. */

@@ -1,6 +1,6 @@
 package com.aleksandrmakarov.journals.bot;
 
-import com.aleksandrmakarov.journals.model.User;
+import com.aleksandrmakarov.journals.security.ForbiddenException;
 import com.aleksandrmakarov.journals.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,27 +57,33 @@ public class JournalsBot extends TelegramWebhookBot {
       String firstName = update.getMessage().getFrom().getFirstName();
       String lastName = update.getMessage().getFrom().getLastName();
 
-      logger.info("Processing message from user {} ({}): '{}'", userId, username, messageText);
-
       // Register or update user
-      User user = userService.findOrCreateUser(userId, username, firstName, lastName);
-      logger.debug("User {} found/created with role: {}", userId, user.role());
-
+      var user = userService.findOrCreateUser(userId, username, firstName, lastName);
+      var logPrefix =
+          "Message from "
+              + user.role()
+              + " "
+              + userId
+              + " ("
+              + username
+              + ", "
+              + firstName
+              + " "
+              + lastName
+              + ")";
+      logger.info("{} received: '{}'", logPrefix, messageText);
       try {
         String response = commandHandler.handleCommand(messageText, user, update);
-        logger.info(
-            "Command processed successfully for user {} ({}). Response length: {}",
-            userId,
-            username,
-            response.length());
+        logger.info("{} is answered: {}", logPrefix, response);
         return createSendMessage(chatId, response);
+      } catch (ForbiddenException fe) {
+        return createSendMessage(chatId, fe.getMessage());
       } catch (Exception e) {
-        logger.error(
-            "Error processing command for user {} ({}): {}", userId, username, e.getMessage(), e);
+        logger.error("{} failed: {}", logPrefix, e.getMessage(), e);
         return createSendMessage(chatId, "Sorry, an error occurred. Please try again.");
       }
     } else {
-      logger.debug("Received update without text message: {}", update.getUpdateId());
+      logger.debug("Received update without text message: {}", update);
     }
     return null;
   }
@@ -86,7 +92,7 @@ public class JournalsBot extends TelegramWebhookBot {
     SendMessage message = new SendMessage();
     message.setChatId(chatId.toString());
     message.setText(text);
-    message.setParseMode("HTML");
+    message.setParseMode("Markdown");
     return message;
   }
 }

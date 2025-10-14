@@ -33,6 +33,13 @@ public class QuestionRepository {
         type.name());
   }
 
+  public List<Question> findBySessionIdOrderByOrderIndex(Long sessionId, QuestionType type) {
+    return jdbcTemplate.query(
+        "SELECT * FROM questions WHERE session_id = ? ORDER BY order_index",
+        QUESTION_ROW_MAPPER,
+        sessionId);
+  }
+
   public Question save(Question question) {
     if (question.id() == null) {
       // Insert new question

@@ -7,7 +7,8 @@ import java.time.LocalDateTime;
  * active at a time.
  *
  * @param id Unique identifier in the database
- * @param date Date and time when the session was created
- * @param isActive Whether this session is currently active (only one can be active)
+ * @param name Name of the session
+ * @param createdAt Date and time when the session was created
+ * @param finishedAt Date and time when the session was finished (null if still active)
  */
-public record Session(Long id, LocalDateTime date, Boolean isActive) {}
+public record Session(Long id, String name, LocalDateTime createdAt, LocalDateTime finishedAt) {}

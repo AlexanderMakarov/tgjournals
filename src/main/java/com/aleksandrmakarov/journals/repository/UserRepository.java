@@ -1,5 +1,6 @@
 package com.aleksandrmakarov.journals.repository;
 
+import com.aleksandrmakarov.journals.model.StateType;
 import com.aleksandrmakarov.journals.model.User;
 import com.aleksandrmakarov.journals.model.UserRole;
 import com.aleksandrmakarov.journals.util.TimestampUtils;
@@ -34,7 +35,16 @@ public class UserRepository {
               rs.getString("first_name"),
               rs.getString("last_name"),
               UserRole.valueOf(rs.getString("role")),
-              TimestampUtils.fromTimestamp(rs.getTimestamp("created_at")));
+              TimestampUtils.fromTimestamp(rs.getTimestamp("created_at")),
+              rs.getString("state_type") != null
+                  ? com.aleksandrmakarov.journals.model.StateType.valueOf(
+                      rs.getString("state_type"))
+                  : null,
+              rs.getObject("state_session_id") != null ? rs.getLong("state_session_id") : null,
+              rs.getObject("state_question_index") != null
+                  ? rs.getInt("state_question_index")
+                  : null,
+              TimestampUtils.fromTimestamp(rs.getTimestamp("state_updated_at")));
         };
   }
 
@@ -48,6 +58,23 @@ public class UserRepository {
     List<User> users =
         jdbcTemplate.query("SELECT * FROM users WHERE telegram_id = ?", userRowMapper, telegramId);
     return users.stream().findFirst();
+  }
+
+  /** Sets the single state for user, overwriting any existing one. */
+  public void upsertState(Long userId, StateType stateType, Long sessionId, Integer questionIndex) {
+    jdbcTemplate.update(
+        "UPDATE users SET state_type = ?, state_session_id = ?, state_question_index = ?, state_updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        stateType != null ? stateType.name() : null,
+        sessionId,
+        questionIndex,
+        userId);
+  }
+
+  /** Clears any state for user. */
+  public void clearState(Long userId) {
+    jdbcTemplate.update(
+        "UPDATE users SET state_type = NULL, state_session_id = NULL, state_question_index = NULL, state_updated_at = NULL WHERE id = ?",
+        userId);
   }
 
   /**
@@ -76,7 +103,11 @@ public class UserRepository {
           user.firstName(),
           user.lastName(),
           user.role(),
-          user.createdAt());
+          user.createdAt(),
+          null,
+          null,
+          null,
+          null);
     } else {
       // Update existing user
       jdbcTemplate.update(
@@ -112,7 +143,8 @@ public class UserRepository {
    * @return Total number of users
    */
   public long count() {
-    return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+    Long result = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users", Long.class);
+    return result != null ? result : 0L;
   }
 
   /** Deletes all users from the database. Used primarily for testing. */
