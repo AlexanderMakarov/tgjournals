@@ -25,12 +25,11 @@ public class QuestionRepository {
               rs.getInt("order_index"),
               rs.getLong("session_id"));
 
-  public List<Question> findBySessionIdAndTypeOrderByOrderIndex(Long sessionId, QuestionType type) {
+  public List<Question> findBySessionIdOrderByOrderIndex(Long sessionId) {
     return jdbcTemplate.query(
-        "SELECT * FROM questions WHERE session_id = ? AND type = ? ORDER BY order_index",
+        "SELECT * FROM questions WHERE session_id = ? ORDER BY order_index",
         QUESTION_ROW_MAPPER,
-        sessionId,
-        type.name());
+        sessionId);
   }
 
   public List<Question> findBySessionIdOrderByOrderIndex(Long sessionId, QuestionType type) {
@@ -63,6 +62,41 @@ public class QuestionRepository {
           question.id());
       return question;
     }
+  }
+
+  public List<Long> saveBatch(List<Question> questions) {
+    if (questions == null || questions.isEmpty()) {
+      return java.util.Collections.emptyList();
+    }
+
+    StringBuilder sql =
+        new StringBuilder(
+            "INSERT INTO questions (text, type, order_index, session_id) VALUES ");
+    String sep = "";
+    for (int i = 0; i < questions.size(); i++) {
+      sql.append(sep).append("(?, ?, ?, ?)");
+      sep = ", ";
+    }
+    sql.append(" RETURNING id");
+
+    java.util.List<Object> params = new java.util.ArrayList<>(questions.size() * 4);
+    for (Question q : questions) {
+      params.add(q.text());
+      params.add(q.type().name());
+      params.add(q.orderIndex());
+      params.add(q.sessionId());
+    }
+
+    Object[] arr = params.toArray();
+    return jdbcTemplate.query(
+        con -> {
+          var ps = con.prepareStatement(sql.toString());
+          for (int i = 0; i < arr.length; i++) {
+            ps.setObject(i + 1, arr[i]);
+          }
+          return ps;
+        },
+        (rs, rowNum) -> rs.getLong("id"));
   }
 
   public void deleteBySessionId(Long sessionId) {

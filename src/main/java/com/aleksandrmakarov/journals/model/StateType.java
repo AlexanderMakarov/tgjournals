@@ -5,5 +5,5 @@ public enum StateType {
   /** Player is answering on questions in QA flow. */
   QA_FLOW,
   /** Admin is updating questions. */
-  QUESTION_UPDATE
+  QUESTIONS_UPDATE
 }

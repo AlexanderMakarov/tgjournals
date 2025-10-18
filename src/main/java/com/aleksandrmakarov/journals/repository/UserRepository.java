@@ -60,6 +60,18 @@ public class UserRepository {
     return users.stream().findFirst();
   }
 
+  /**
+   * Finds a user by their username.
+   *
+   * @param username The username to search for
+   * @return Optional containing the user if found, empty otherwise
+   */
+  public Optional<User> findByUsername(String username) {
+    List<User> users =
+        jdbcTemplate.query("SELECT * FROM users WHERE username = ?", userRowMapper, username);
+    return users.stream().findFirst();
+  }
+
   /** Sets the single state for user, overwriting any existing one. */
   public void upsertState(Long userId, StateType stateType, Long sessionId, Integer questionIndex) {
     jdbcTemplate.update(
@@ -71,10 +83,16 @@ public class UserRepository {
   }
 
   /** Clears any state for user. */
-  public void clearState(Long userId) {
-    jdbcTemplate.update(
-        "UPDATE users SET state_type = NULL, state_session_id = NULL, state_question_index = NULL, state_updated_at = NULL WHERE id = ?",
-        userId);
+  public void clearState(Long userId, boolean isClearQuestionIndex) {
+    if (isClearQuestionIndex) {
+      jdbcTemplate.update(
+          "UPDATE users SET state_type = NULL, state_session_id = NULL, state_question_index = 0, state_updated_at = NULL WHERE id = ?",
+          userId);
+    } else {
+      jdbcTemplate.update(
+          "UPDATE users SET state_type = NULL, state_session_id = NULL, state_updated_at = NULL WHERE id = ?",
+          userId);
+    }
   }
 
   /**
@@ -88,13 +106,14 @@ public class UserRepository {
     if (user.id() == null) {
       // Insert new user
       jdbcTemplate.update(
-          "INSERT INTO users (telegram_id, username, first_name, last_name, role, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+          "INSERT INTO users (telegram_id, username, first_name, last_name, role, created_at, state_question_index) VALUES (?, ?, ?, ?, ?, ?, ?)",
           user.telegramId(),
           user.username(),
           user.firstName(),
           user.lastName(),
           user.role().name(),
-          TimestampUtils.toTimestamp(user.createdAt()));
+          TimestampUtils.toTimestamp(user.createdAt()),
+          0);
       Long id = jdbcTemplate.queryForObject("SELECT last_insert_rowid()", Long.class);
       return new User(
           id,
@@ -106,7 +125,7 @@ public class UserRepository {
           user.createdAt(),
           null,
           null,
-          null,
+          user.stateQuestionIndex(),
           null);
     } else {
       // Update existing user
@@ -122,16 +141,15 @@ public class UserRepository {
   }
 
   /**
-   * Finds all players ordered by their last journal entry date. Players with no journals appear
-   * last in the list.
+   * Finds all participants ordered by their last journal entry date.
+   * Participants with no journals appear last in the list.
    *
-   * @return List of players sorted by last journal date (most recent first)
+   * @return List of participants sorted by last journal date (most recent first).
    */
-  public List<User> findPlayersOrderedByLastJournal() {
+  public List<User> findParticipantsOrderedByLastJournal() {
     return jdbcTemplate.query(
         "SELECT u.* FROM users u "
             + "LEFT JOIN journals j ON u.id = j.user_id "
-            + "WHERE u.role = 'PLAYER' "
             + "GROUP BY u.id "
             + "ORDER BY MAX(j.created_at) DESC NULLS LAST",
         userRowMapper);

@@ -55,7 +55,7 @@ public class UserService {
               LocalDateTime.now(),
               null,
               null,
-              null,
+              0,
               null);
       return userRepository.save(newUser);
     }
@@ -65,12 +65,15 @@ public class UserService {
     return userRepository.findByTelegramId(telegramId).orElse(null);
   }
 
-  public List<User> getPlayersOrderedByLastJournal() {
-    return userRepository.findPlayersOrderedByLastJournal();
+  public User findUserByUsername(String username) {
+    return userRepository.findByUsername(username).orElse(null);
   }
 
-  public void promoteToCoach(Long telegramId) {
-    User user = findUserByTelegramId(telegramId);
+  public List<User> getParticipantsOrderedByLastJournal() {
+    return userRepository.findParticipantsOrderedByLastJournal();
+  }
+
+  public void promoteToAdmin(User user) {
     if (user != null) {
       User updatedUser =
           new User(
@@ -128,7 +131,7 @@ public class UserService {
               LocalDateTime.now(),
               null,
               null,
-              null,
+              0,
               null);
       return userRepository.save(newUser);
     }
@@ -140,17 +143,11 @@ public class UserService {
     userRepository.upsertState(userId, StateType.QA_FLOW, sessionId, questionIndex);
   }
 
-  public void clearQuestionFlowState(Long userId) {
-    userRepository.clearState(userId);
+  public void setQuestionsUpdateMode(Long userId, Long sessionId) {
+    userRepository.upsertState(userId, StateType.QUESTIONS_UPDATE, sessionId, -1);
   }
 
-  public void setQuestionUpdateMode(Long userId, Long sessionId) {
-    userRepository.upsertState(userId, StateType.QUESTION_UPDATE, sessionId, null);
+  public void clearUserState(Long userId, boolean isClearQuestionIndex) {
+    userRepository.clearState(userId, isClearQuestionIndex);
   }
-
-  public void clearQuestionUpdateMode(Long userId) {
-    userRepository.clearState(userId);
-  }
-
-  // No read method needed here; the `User` entity carries state fields when loaded
 }

@@ -5,14 +5,6 @@ import java.time.LocalDateTime;
 /**
  * Represents a user in the journals system. Can be either a COACH or PLAYER with different
  * permissions.
- *
- * @param id Unique identifier in the database
- * @param telegramId Telegram user ID from the bot API
- * @param username Telegram username (without @)
- * @param firstName User's first name
- * @param lastName User's last name
- * @param role User role (COACH or PLAYER)
- * @param createdAt Timestamp when the user was first registered
  */
 public record User(
     Long id,
@@ -24,7 +16,7 @@ public record User(
     LocalDateTime createdAt,
     StateType stateType,
     Long stateSessionId,
-    Integer stateQuestionIndex,
+    int stateQuestionIndex,
     LocalDateTime stateUpdatedAt) {
 
   /**

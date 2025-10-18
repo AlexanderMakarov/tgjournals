@@ -3,6 +3,8 @@ package com.aleksandrmakarov.journals.service;
 import com.aleksandrmakarov.journals.model.Question;
 import com.aleksandrmakarov.journals.model.QuestionType;
 import com.aleksandrmakarov.journals.model.Session;
+import com.aleksandrmakarov.journals.model.SessionJournals;
+import com.aleksandrmakarov.journals.repository.JournalRepository;
 import com.aleksandrmakarov.journals.repository.QuestionRepository;
 import com.aleksandrmakarov.journals.repository.SessionRepository;
 import java.time.LocalDateTime;
@@ -16,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class SessionService {
 
   @Autowired private SessionRepository sessionRepository;
+
+  @Autowired private JournalRepository journalRepository;
 
   @Autowired private QuestionRepository questionRepository;
 
@@ -56,38 +60,24 @@ public class SessionService {
     return null;
   }
 
-  public void updateSessionQuestions(Session session, String questionsText) {
-    // Clear existing questions
+  public void updateSessionQuestions(Session session, List<Question> questions) {
     questionRepository.deleteBySessionId(session.id());
-
-    // Parse and create new questions
-    String[] lines = questionsText.split("\n");
-    int beforeOrder = 1;
-    int afterOrder = 1;
-
-    for (String line : lines) {
-      line = line.trim();
-      if (line.isEmpty()) continue;
-
-      QuestionType type;
-      String text;
-
-      if (line.startsWith("Before: ")) {
-        type = QuestionType.BEFORE;
-        text = line.substring(8);
-        Question question = new Question(null, text, type, beforeOrder++, session.id());
-        questionRepository.save(question);
-      } else if (line.startsWith("After: ")) {
-        type = QuestionType.AFTER;
-        text = line.substring(7);
-        Question question = new Question(null, text, type, afterOrder++, session.id());
-        questionRepository.save(question);
-      }
+    if (questions == null || questions.isEmpty()) {
+      return;
+    }
+    for (Question q : questions) {
+      if (q == null) continue;
+      Question toSave = new Question(null, q.text(), q.type(), q.orderIndex(), session.id());
+      questionRepository.save(toSave);
     }
   }
 
-  public List<Question> getQuestionsByType(Session session, QuestionType type) {
-    return questionRepository.findBySessionIdAndTypeOrderByOrderIndex(session.id(), type);
+  public List<Question> getQuestions(Long sessionId) {
+    return questionRepository.findBySessionIdOrderByOrderIndex(sessionId);
+  }
+
+  public List<SessionJournals> getJournalsForLastSessions(Long userId, int limitLastSessions) {
+    return journalRepository.findByUserIdGroupBySessionIdOrderByCreatedAtAsc(userId, limitLastSessions);
   }
 
   private void copyQuestionsFromLastSession(Session newSession) {

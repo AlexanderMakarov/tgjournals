@@ -10,9 +10,9 @@ CREATE TABLE IF NOT EXISTS users (
     last_name TEXT,
     role TEXT NOT NULL CHECK (role IN ('ADMIN', 'PLAYER')),
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    state_type TEXT CHECK (state_type IN ('QA_FLOW', 'SESSION_CREATE_PENDING', 'QUESTION_UPDATE')),
+    state_type TEXT CHECK (state_type IN ('QA_FLOW', 'SESSION_CREATE_PENDING', 'QUESTIONS_UPDATE')),
     state_session_id INTEGER,
-    state_question_index INTEGER,
+    state_question_index INTEGER NOT NULL,
     state_updated_at DATETIME
 );
 
