@@ -70,8 +70,7 @@ public class QuestionRepository {
     }
 
     StringBuilder sql =
-        new StringBuilder(
-            "INSERT INTO questions (text, type, order_index, session_id) VALUES ");
+        new StringBuilder("INSERT INTO questions (text, type, order_index, session_id) VALUES ");
     String sep = "";
     for (int i = 0; i < questions.size(); i++) {
       sql.append(sep).append("(?, ?, ?, ?)");

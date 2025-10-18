@@ -5,7 +5,6 @@ import com.aleksandrmakarov.journals.security.ForbiddenException;
 import com.aleksandrmakarov.journals.service.JournalService;
 import com.aleksandrmakarov.journals.service.SessionService;
 import com.aleksandrmakarov.journals.service.UserService;
-
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,34 +16,32 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 public class BotCommandHandler {
 
   /** Record containing session display information and metadata. */
-  public record SessionDisplayResult(String displayText, Session session, boolean hasQuestions) {
-  }
+  public record SessionDisplayResult(String displayText, Session session, boolean hasQuestions) {}
 
-  @Autowired
-  private UserService userService;
+  @Autowired private UserService userService;
 
-  @Autowired
-  private SessionService sessionService;
+  @Autowired private SessionService sessionService;
 
-  @Autowired
-  private JournalService journalService;
+  @Autowired private JournalService journalService;
 
-  public static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+  public static final DateTimeFormatter DATETIME_FORMATTER =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
   // State operations are handled by userService now
   public static final String BEFORE_PREFIX = "Before: ";
   public static final String AFTER_PREFIX = "After: ";
 
   /** Explanation for questions updates. */
-  public static final String QUESTIONS_UPDATE_EXPLANATION = "Please provide questions in the following format:\n"
-      + "```\n"
-      + BEFORE_PREFIX
-      + "Question to answer before the session?\n"
-      + AFTER_PREFIX
-      + "Question 1 to answer after the session?\n"
-      + AFTER_PREFIX
-      + "Question 2 to answer after the session?\n```"
-      + "Send empty string to cancel.";
+  public static final String QUESTIONS_UPDATE_EXPLANATION =
+      "Please provide questions in the following format:\n"
+          + "```\n"
+          + BEFORE_PREFIX
+          + "Question to answer before the session?\n"
+          + AFTER_PREFIX
+          + "Question 1 to answer after the session?\n"
+          + AFTER_PREFIX
+          + "Question 2 to answer after the session?\n```"
+          + "Send empty string to cancel.";
 
   private static void requireAdmin(User user) {
     if (user == null || user.role() != UserRole.ADMIN) {
@@ -57,8 +54,8 @@ public class BotCommandHandler {
    * Handles the command received from the user.
    *
    * @param messageText The text of the message received from the user.
-   * @param user        The user who sent the message.
-   * @param update      The update received from the user.
+   * @param user The user who sent the message.
+   * @param update The update received from the user.
    * @return The response to the user.
    */
   public String handleCommand(String messageText, User user, Update update) {
@@ -71,8 +68,8 @@ public class BotCommandHandler {
       case "/help":
         return getHelpMessage(user.role());
 
-        case "/admins":
-          return handleAdminsCommand(user);
+      case "/admins":
+        return handleAdminsCommand(user);
 
       case "/set_questions":
         return handleSetQuestionsCommand(user, messageText);
@@ -110,8 +107,9 @@ public class BotCommandHandler {
   }
 
   private String getHelpMessage(UserRole role) {
-    StringBuilder help = new StringBuilder(
-        "Bot allows to create and view journals with answers on questions for each session (before and after), players can answer questions one-by-one, and admin can view all journals.\n\n");
+    StringBuilder help =
+        new StringBuilder(
+            "Bot allows to create and view journals with answers on questions for each session (before and after), players can answer questions one-by-one, and admin can view all journals.\n\n");
 
     if (role == UserRole.ADMIN) {
       help.append("👨‍🏫 *Admin Commands:*\n");
@@ -132,9 +130,8 @@ public class BotCommandHandler {
   }
 
   /**
-   * Handles the `/session` command. Only for admins.
-   * If no arguments - prints current session and questions.
-   * If name is provided - finishes current session and creates new one.
+   * Handles the `/session` command. Only for admins. If no arguments - prints current session and
+   * questions. If name is provided - finishes current session and creates new one.
    */
   private String handleSessionCommand(User user, String messageText) {
     requireAdmin(user);
@@ -158,25 +155,25 @@ public class BotCommandHandler {
       response.append("✅ Session '").append(finishedSession.name()).append("' was finished.\n\n");
     }
     var session = sessionService.createNewSession(newSessionName);
-    response
-        .append("✅ Session '")
-        .append(newSessionName)
-        .append("' created successfully!\n\n");
+    response.append("✅ Session '").append(newSessionName).append("' created successfully!\n\n");
     SessionDisplayResult displayResult = buildSessionAndQuestionsDisplay(session);
     // Either print existing questions or switch to question update (aka "set") mode.
     if (displayResult.hasQuestions()) {
-      response.append(displayResult.displayText()).append("Use `/set_questions` command if need to update questions.");
+      response
+          .append(displayResult.displayText())
+          .append("Use /set_questions command if need to update questions.");
     } else {
-      response.append("No questions found for active session.\n").append(QUESTIONS_UPDATE_EXPLANATION);
+      response
+          .append("No questions found for active session.\n")
+          .append(QUESTIONS_UPDATE_EXPLANATION);
       userService.setQuestionsUpdateMode(user.id(), session.id());
     }
     return response.toString();
   }
 
   /**
-   * Handles the `/set_questions` command. Only for admins.
-   * Prints current session and questions, explanation, and switches
-   * user to "question update" mode.
+   * Handles the `/set_questions` command. Only for admins. Prints current session and questions,
+   * explanation, and switches user to "question update" mode.
    */
   private String handleSetQuestionsCommand(User user, String messageText) {
     requireAdmin(user);
@@ -198,8 +195,8 @@ public class BotCommandHandler {
   }
 
   /**
-   * Handles the `/before` command.
-   * Checks what questions are available and switches user to "question flow" mode.
+   * Handles the `/before` command. Checks what questions are available and switches user to
+   * "question flow" mode.
    */
   private String handleBeforeCommand(User user) {
     Session activeSession = sessionService.getActiveSession();
@@ -212,7 +209,7 @@ public class BotCommandHandler {
     if (questions.isEmpty()) {
       return "No questions found for active session.\nPlease ask your admin to set questions first.";
     } else if (questions.get(0).type() == QuestionType.AFTER) {
-      return "No 'before' questions found for active session.\nGood luck with the session, run `/after` command once you finish it.";
+      return "No 'before' questions found for active session.\nGood luck with the session, run /after command once you finish it.";
     }
 
     // Update user state and start flow of answering questions.
@@ -226,8 +223,8 @@ public class BotCommandHandler {
   }
 
   /**
-   * Handles the `/after` command.
-   * Checks what questions are available and switches user to "question flow" mode.
+   * Handles the `/after` command. Checks what questions are available and switches user to
+   * "question flow" mode.
    */
   private String handleAfterCommand(User user) {
     Session activeSession = sessionService.getActiveSession();
@@ -274,37 +271,38 @@ public class BotCommandHandler {
 
     StringBuilder sb = new StringBuilder(prefix).append(":\n\n");
     for (SessionJournals sessionJournal : sessionJournals) {
-      sb.append("📅 ").append(sessionJournal.sessionDate().format(DATETIME_FORMATTER)).append(" '").append(sessionJournal.sessionName()).append("':\n");
+      sb.append("📅 ")
+          .append(sessionJournal.sessionDate().format(DATETIME_FORMATTER))
+          .append(" '")
+          .append(sessionJournal.sessionName())
+          .append("':\n");
       for (JournalWithQuestion journalWithQuestion : sessionJournal.journals()) {
-        sb.append("(").append(journalWithQuestion.questionType()).append(") ").append(journalWithQuestion.question()).append(" - ").append(journalWithQuestion.journal().answer()).append("\n");
+        sb.append("(")
+            .append(journalWithQuestion.questionType())
+            .append(") ")
+            .append(journalWithQuestion.question())
+            .append(" - ")
+            .append(journalWithQuestion.journal().answer())
+            .append("\n");
       }
       sb.append("\n");
     }
     return sb.toString();
   }
 
-  /**
-   * Handles the `/last` command.
-   * Returns last journal for the user.
-   */
+  /** Handles the `/last` command. Returns last journal for the user. */
   private String handleLastCommand(User user) {
     List<SessionJournals> journals = sessionService.getJournalsForLastSessions(user.id(), 1);
     return formatJournalsForDisplay("Last journal", journals);
   }
 
-  /**
-   * Handles the `/last5` command.
-   * Returns last 5 journals for the user.
-   */
+  /** Handles the `/last5` command. Returns last 5 journals for the user. */
   private String handleLast5Command(User user) {
     List<SessionJournals> journals = sessionService.getJournalsForLastSessions(user.id(), 5);
     return formatJournalsForDisplay("Last 5 journals", journals);
   }
 
-  /**
-   * Handles the `/last50` command.
-   * Returns last 50 journals for the user.
-   */
+  /** Handles the `/last50` command. Returns last 50 journals for the user. */
   private String handleLast50Command(User user) {
     List<SessionJournals> journals = sessionService.getJournalsForLastSessions(user.id(), 50);
     return formatJournalsForDisplay("Last 50 journals", journals);
@@ -317,14 +315,19 @@ public class BotCommandHandler {
     }
     StringBuilder response = new StringBuilder("📋 *Admins:*\n\n");
     for (User admin : admins) {
-      response.append("👤 ").append(admin.getDisplayName()).append(" (@").append(admin.username()).append(")\n");
+      response
+          .append("👤 ")
+          .append(admin.getDisplayName())
+          .append(" (@")
+          .append(admin.username())
+          .append(")\n");
     }
     return response.toString();
   }
 
   /**
-   * Handles the `/participants` command. Only for admins.
-   * Returns list of players ordered by last journal.
+   * Handles the `/participants` command. Only for admins. Returns list of players ordered by last
+   * journal.
    */
   private String handleParticipantsCommand(User user) {
     requireAdmin(user);
@@ -336,20 +339,22 @@ public class BotCommandHandler {
 
     StringBuilder response = new StringBuilder("📋 *Participants:*\n\n");
     for (User participant : participants) {
+      // TODO: get number of journals in one query.
       Long journalCount = journalService.getUserJournalCount(participant);
       response.append("👤 ");
       if (participant.role() != UserRole.PLAYER) {
         response.append("(").append(participant.role()).append(") ");
       }
-      response.append(participant.getDisplayName()).append(" - ").append(journalCount).append(" journals\n");
+      response
+          .append(participant.getDisplayName())
+          .append(" - ")
+          .append(journalCount)
+          .append(" journals\n");
     }
     return response.toString();
   }
 
-  /**
-   * Handles the `/promote` command. Only for admins.
-   * Promotes a user to admin role.
-   */
+  /** Handles the `/promote` command. Only for admins. Promotes a user to admin role. */
   private String handlePromoteCommand(User user, String messageText) {
     requireAdmin(user);
     String[] parts = messageText.split(" ", 2);
@@ -366,8 +371,8 @@ public class BotCommandHandler {
   }
 
   /**
-   * Handles the text input from the user when it doesn't have command prefix.
-   * Checks user state and handles it.
+   * Handles the text input from the user when it doesn't have command prefix. Checks user state and
+   * handles it.
    */
   private String handleTextInput(User user, String messageText) {
     if (user.stateType() == null) {
@@ -384,9 +389,8 @@ public class BotCommandHandler {
   }
 
   /**
-   * Handles the text input from the user when it is in "question update" state.
-   * Parses incoming text into list of Question entities using prefixes
-   * and updates session questions.
+   * Handles the text input from the user when it is in "question update" state. Parses incoming
+   * text into list of Question entities using prefixes and updates session questions.
    */
   private String handleQuestionsUpdateFlow(User user, String messageText) {
     if (messageText.trim().isEmpty()) {
@@ -402,7 +406,7 @@ public class BotCommandHandler {
 
     // Parse incoming text into list of Question entities using prefixes.
     String[] lines = messageText.split("\n");
-    int questionOrder = 1;  // Starts with 1.
+    int questionOrder = 1; // Starts with 1.
     List<Question> parsedQuestions = new ArrayList<>();
     for (String raw : lines) {
       String line = raw.trim();
@@ -429,8 +433,8 @@ public class BotCommandHandler {
   }
 
   /**
-   * Handles the text input from the user when it is in "question flow" state.
-   * Saves answer and responses with next question or completion message.
+   * Handles the text input from the user when it is in "question flow" state. Saves answer and
+   * responses with next question or completion message.
    */
   private String handleQAFlow(User user, String messageText) {
     var session = sessionService.getActiveSession();
@@ -497,19 +501,22 @@ public class BotCommandHandler {
    * Builds a formatted display string for the current session and its questions.
    *
    * @param activeSession The active session to display
-   * @return SessionDisplayResult containing display text, session, and
-   *         hasQuestions flag
+   * @return SessionDisplayResult containing display text, session, and hasQuestions flag
    */
   private SessionDisplayResult buildSessionAndQuestionsDisplay(Session activeSession) {
     StringBuilder response = new StringBuilder("📝 *Current Session:*\n");
     response.append("Name: ").append(activeSession.name()).append("\n");
-    response.append("Created: ").append(activeSession.createdAt().format(DATETIME_FORMATTER)).append("\n\n");
+    response
+        .append("Created: ")
+        .append(activeSession.createdAt().format(DATETIME_FORMATTER))
+        .append("\n\n");
     String currentQuestionsDisplay = buildCurrentQuestionsDisplay(activeSession);
     if (!currentQuestionsDisplay.isEmpty()) {
       response.append("📋 *Current Questions:*\n");
       response.append(currentQuestionsDisplay);
     } else {
-      response.append("No questions found for active session.\nUse `/set_questions` command to set questions.");
+      response.append(
+          "No questions found for active session.\nUse /set_questions command to set questions.");
     }
     return new SessionDisplayResult(
         response.toString(), activeSession, !currentQuestionsDisplay.isEmpty());

@@ -77,7 +77,7 @@ public class SessionService {
   }
 
   public List<SessionJournals> getJournalsForLastSessions(Long userId, int limitLastSessions) {
-    return journalRepository.findByUserIdGroupBySessionIdOrderByCreatedAtAsc(userId, limitLastSessions);
+    return journalRepository.findLastNJournalsPerUser(userId, limitLastSessions);
   }
 
   private void copyQuestionsFromLastSession(Session newSession) {

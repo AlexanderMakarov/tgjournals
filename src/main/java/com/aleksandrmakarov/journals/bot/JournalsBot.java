@@ -74,14 +74,14 @@ public class JournalsBot extends TelegramWebhookBot {
       logger.info("{} received: '{}'", logPrefix, messageText);
       try {
         String response = commandHandler.handleCommand(messageText, user, update);
-        logger.info("{} is answered: {}", logPrefix, response);
-        
+        logger.info("{} is answered: {}", logPrefix, response.replace("\n", "⏎"));
+
         // Validate response
         if (response == null || response.trim().isEmpty()) {
           logger.warn("Empty response from command handler for: {}", messageText);
           response = "Sorry, I didn't understand that. Use /help to see available commands.";
         }
-        
+
         return createSendMessage(chatId, response);
       } catch (ForbiddenException fe) {
         return createSendMessage(chatId, fe.getMessage());

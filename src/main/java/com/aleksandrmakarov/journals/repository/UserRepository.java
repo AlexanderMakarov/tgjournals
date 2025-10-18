@@ -12,10 +12,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
-/**
- * Repository for managing User entities in the database. Provides CRUD operations and specialized
- * queries for user management. Uses JdbcTemplate for direct SQL operations with SQLite.
- */
+/** Repository for managing User entities in the database. */
 @Repository
 @RequiredArgsConstructor
 public class UserRepository {
@@ -151,8 +148,8 @@ public class UserRepository {
   }
 
   /**
-   * Finds all participants ordered by their last journal entry date.
-   * Participants with no journals appear last in the list.
+   * Finds all participants ordered by their last journal entry date. Participants with no journals
+   * appear last in the list.
    *
    * @return List of participants sorted by last journal date (most recent first).
    */
