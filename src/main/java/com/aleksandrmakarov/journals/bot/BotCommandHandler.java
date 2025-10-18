@@ -43,7 +43,7 @@ public class BotCommandHandler {
       + AFTER_PREFIX
       + "Question 1 to answer after the session?\n"
       + AFTER_PREFIX
-      + "Question 2 to answer after the session?\n```\n\n"
+      + "Question 2 to answer after the session?\n```"
       + "Send empty string to cancel.";
 
   private static void requireAdmin(User user) {
@@ -66,10 +66,13 @@ public class BotCommandHandler {
 
     switch (command) {
       case "/start":
-        return "Welcome to AM Journals Bot. If you are a player, use `/before` and `/after` to answer questions before and after the session. If you are an admin, use `/sessions` to create sessions. Use `/help` to see all available commands.";
+        return "Welcome to AM Journals Bot. Use /before and /after to answer questions before and after the session. Use /admins to see list of admins.";
 
       case "/help":
         return getHelpMessage(user.role());
+
+        case "/admins":
+          return handleAdminsCommand(user);
 
       case "/set_questions":
         return handleSetQuestionsCommand(user, messageText);
@@ -112,18 +115,18 @@ public class BotCommandHandler {
 
     if (role == UserRole.ADMIN) {
       help.append("👨‍🏫 *Admin Commands:*\n");
-      help.append("`/session` - View/replace current session\n");
-      help.append("`/set_questions` - Set current session questions\n");
-      help.append("`/participants` - View all participants\n");
-      help.append("`/promote` - Promote a user to admin role\n\n");
+      help.append("/session - View/replace current session\n");
+      help.append("/set_questions - Set current session questions\n");
+      help.append("/participants - View all participants\n");
+      help.append("/promote - Promote a user to admin role\n\n");
     }
 
     help.append("👤 *Player Commands:*\n");
-    help.append("`/before` - Answer pre-session questions\n");
-    help.append("`/after` - Answer post-session questions\n");
-    help.append("`/last` - View last journal\n");
-    help.append("`/last5` - View last 5 journals\n");
-    help.append("`/last50` - View last 50 journals\n");
+    help.append("/before - Answer pre-session questions\n");
+    help.append("/after - Answer post-session questions\n");
+    help.append("/last - View last journal\n");
+    help.append("/last5 - View last 5 journals\n");
+    help.append("/last50 - View last 50 journals\n");
 
     return help.toString();
   }
@@ -218,7 +221,7 @@ public class BotCommandHandler {
         + activeSession.name()
         + " (created: "
         + activeSession.createdAt().format(DATETIME_FORMATTER)
-        + ")\nPlease answer the following pre-session questions:\n\n❓ "
+        + ")\nPlease answer the following pre-session questions:\n❓ "
         + questions.get(0).text();
   }
 
@@ -260,7 +263,7 @@ public class BotCommandHandler {
         + activeSession.name()
         + " (created: "
         + activeSession.createdAt().format(DATETIME_FORMATTER)
-        + ")\nPlease answer the following post-session questions:\n\n❓ "
+        + ")\nPlease answer the following post-session questions:\n❓ "
         + currentQuestion.text();
   }
 
@@ -273,7 +276,7 @@ public class BotCommandHandler {
     for (SessionJournals sessionJournal : sessionJournals) {
       sb.append("📅 ").append(sessionJournal.sessionDate().format(DATETIME_FORMATTER)).append(" '").append(sessionJournal.sessionName()).append("':\n");
       for (JournalWithQuestion journalWithQuestion : sessionJournal.journals()) {
-        sb.append("* (").append(journalWithQuestion.questionType()).append(") ").append(journalWithQuestion.question()).append(" - ").append(journalWithQuestion.journal().answer()).append("\n");
+        sb.append("(").append(journalWithQuestion.questionType()).append(") ").append(journalWithQuestion.question()).append(" - ").append(journalWithQuestion.journal().answer()).append("\n");
       }
       sb.append("\n");
     }
@@ -305,6 +308,18 @@ public class BotCommandHandler {
   private String handleLast50Command(User user) {
     List<SessionJournals> journals = sessionService.getJournalsForLastSessions(user.id(), 50);
     return formatJournalsForDisplay("Last 50 journals", journals);
+  }
+
+  private String handleAdminsCommand(User user) {
+    List<User> admins = userService.getAdmins();
+    if (admins.isEmpty()) {
+      return "No admins found.";
+    }
+    StringBuilder response = new StringBuilder("📋 *Admins:*\n\n");
+    for (User admin : admins) {
+      response.append("👤 ").append(admin.getDisplayName()).append(" (@").append(admin.username()).append(")\n");
+    }
+    return response.toString();
   }
 
   /**
@@ -410,7 +425,7 @@ public class BotCommandHandler {
 
     // Build display result.
     var displayResult = buildCurrentQuestionsDisplay(activeSession);
-    return "Questions updated successfully to:\n\n" + displayResult;
+    return "Questions updated successfully to:\n" + displayResult;
   }
 
   /**
@@ -469,7 +484,7 @@ public class BotCommandHandler {
 
       // Ask next question.
       userService.setQuestionFlowState(user.id(), session.id(), nextIndex);
-      return "☑️ Answer saved!\n\n❓ " + nextQuestion.text();
+      return "☑️ Answer saved!\n❓ " + nextQuestion.text();
     } else {
 
       // Last question - exit flow.
@@ -491,7 +506,7 @@ public class BotCommandHandler {
     response.append("Created: ").append(activeSession.createdAt().format(DATETIME_FORMATTER)).append("\n\n");
     String currentQuestionsDisplay = buildCurrentQuestionsDisplay(activeSession);
     if (!currentQuestionsDisplay.isEmpty()) {
-      response.append("📋 *Current Questions:*\n\n");
+      response.append("📋 *Current Questions:*\n");
       response.append(currentQuestionsDisplay);
     } else {
       response.append("No questions found for active session.\nUse `/set_questions` command to set questions.");

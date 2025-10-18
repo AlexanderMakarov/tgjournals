@@ -72,6 +72,16 @@ public class UserRepository {
     return users.stream().findFirst();
   }
 
+  /**
+   * Finds all users by their role.
+   *
+   * @param role The role to search for
+   * @return List of users with the given role
+   */
+  public List<User> findAllByRole(UserRole role) {
+    return jdbcTemplate.query("SELECT * FROM users WHERE role = ?", userRowMapper, role.name());
+  }
+
   /** Sets the single state for user, overwriting any existing one. */
   public void upsertState(Long userId, StateType stateType, Long sessionId, Integer questionIndex) {
     jdbcTemplate.update(

@@ -23,9 +23,9 @@ public class UserService {
     if (existingUser.isPresent()) {
       User user = existingUser.get();
       // Update user info if changed.
-      if (!username.equals(user.username())
-          || !firstName.equals(user.firstName())
-          || !lastName.equals(user.lastName())) {
+      if (username != null && !username.equals(user.username())
+          || firstName != null && !firstName.equals(user.firstName())
+          || lastName != null && !lastName.equals(user.lastName())) {
         User updatedUser =
             new User(
                 user.id(),
@@ -67,6 +67,10 @@ public class UserService {
 
   public User findUserByUsername(String username) {
     return userRepository.findByUsername(username).orElse(null);
+  }
+
+  public List<User> getAdmins() {
+    return userRepository.findAllByRole(UserRole.ADMIN);
   }
 
   public List<User> getParticipantsOrderedByLastJournal() {
