@@ -1,0 +1,6 @@
+name: tg-journals
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: Telegram Journals Bot deployment to Google Cloud Functions

@@ -3,6 +3,7 @@ plugins {
 	id 'org.springframework.boot' version '3.5.6'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'com.diffplug.spotless' version '6.25.0'
+	id 'org.graalvm.buildtools.native' version '0.11.1'
 }
 
 group = 'com.aleksandrmakarov'
@@ -11,7 +12,7 @@ description = 'Journals TG bot'
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
+		languageVersion = JavaLanguageVersion.of(project.hasProperty('javaVersion') ? project.property('javaVersion') as Integer : 21)
 	}
 }
 
@@ -58,5 +59,40 @@ spotless {
 		removeUnusedImports()
 		trimTrailingWhitespace()
 		endWithNewline()
+	}
+}
+
+// GraalVM Native Image configuration
+graalvmNative {
+	binaries {
+		main {
+			buildArgs.add('--initialize-at-build-time=org.springframework')
+			buildArgs.add('--initialize-at-build-time=org.telegram')
+			buildArgs.add('--initialize-at-build-time=com.aleksandrmakarov.journals')
+			buildArgs.add('--initialize-at-run-time=org.springframework.boot.autoconfigure')
+			buildArgs.add('--initialize-at-run-time=org.springframework.context')
+			// Spring Framework issue where VfsUtils is trying to detect JBoss VFS infrastructure at build time.
+			buildArgs.add('--initialize-at-run-time=org.springframework.core.io.VfsUtils')
+			buildArgs.add('--initialize-at-run-time=com.aleksandrmakarov.journals.config.TelegramBotConfig')
+			// Jackson classes that were initialized at build time
+			buildArgs.add('--initialize-at-run-time=com.fasterxml.jackson')
+			// Logback classes that were initialized at build time
+			buildArgs.add('--initialize-at-run-time=ch.qos.logback')
+			buildArgs.add('--initialize-at-run-time=org.slf4j')
+			buildArgs.add('--no-fallback')
+			buildArgs.add('--enable-http')
+			buildArgs.add('--enable-https')
+			buildArgs.add('--enable-url-protocols=http,https')
+			buildArgs.add('-H:+AddAllCharsets')
+			buildArgs.add('-H:+IncludeAllLocales')
+			buildArgs.add('-H:+ReportExceptionStackTraces')
+			buildArgs.add('-H:+PrintClassInitialization')
+			buildArgs.add('-H:TraceClassInitialization=true')
+			// Build optimizations
+			buildArgs.add('-H:+UnlockExperimentalVMOptions')
+			buildArgs.add('-H:+UseStringDeduplication')
+			buildArgs.add('-H:+RemoveSaturatedTypeFlows')
+			buildArgs.add('-H:+ReportUnsupportedElementsAtRuntime')
+		}
 	}
 }

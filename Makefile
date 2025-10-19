@@ -114,3 +114,61 @@ health: ## Check application health
 		echo "❌ Application is not running on http://localhost:8080"; \
 		echo "💡 Start the application with: make run"; \
 	fi
+
+# Docker and Google Cloud Functions tasks
+.PHONY: docker-build
+docker-build: ## Build Docker image for Google Cloud Functions
+	@echo "Building Docker image for Google Cloud Functions..."
+	@docker build -t tg-journals:latest .
+	@echo "✅ Docker image built successfully!"
+
+.PHONY: docker-run
+docker-run: ## Run Docker container locally
+	@echo "Running Docker container locally..."
+	@docker run -p 8080:8080 --env-file .env tg-journals:latest
+
+
+.PHONY: gcp-deploy
+gcp-deploy: ## Deploy to Google Cloud Functions using Pulumi
+	@echo "Deploying to Google Cloud Functions..."
+	@if [ -z "$(GCP_PROJECT_ID)" ]; then \
+		echo "ERROR: GCP_PROJECT_ID not set in .env file"; \
+		exit 1; \
+	fi
+	@cd pulumi && pulumi up --yes
+	@echo "✅ Deployment completed successfully!"
+
+.PHONY: gcp-logs
+gcp-logs: ## View Google Cloud Functions logs
+	@echo "Fetching Google Cloud Functions logs..."
+	@if [ -z "$(GCP_PROJECT_ID)" ]; then \
+		echo "ERROR: GCP_PROJECT_ID not set in .env file"; \
+		exit 1; \
+	fi
+	@gcloud functions logs read tg-journals-function --project=$(GCP_PROJECT_ID) --limit=50
+
+.PHONY: gcp-delete
+gcp-delete: ## Delete Google Cloud Functions deployment
+	@echo "Deleting Google Cloud Functions deployment..."
+	@cd pulumi && pulumi destroy --yes
+	@echo "✅ Deployment deleted successfully!"
+
+# Native compilation tasks
+.PHONY: native-build
+native-build: ## Build GraalVM native image locally
+	@echo "Building GraalVM native image..."
+	@./gradlew nativeCompile
+	@echo "✅ Native image built successfully!"
+
+.PHONY: native-run
+native-run: ## Run native image locally
+	@echo "Running native image locally..."
+	@./build/native/nativeCompile/app
+
+.PHONY: full-deploy
+full-deploy: native-build docker-build gcp-deploy ## Complete deployment pipeline
+	@echo "✅ Full deployment pipeline completed!"
+
+.PHONY: quick-deploy
+quick-deploy: docker-build gcp-deploy ## Quick deployment (assumes native image already built)
+	@echo "✅ Quick deployment completed!"
