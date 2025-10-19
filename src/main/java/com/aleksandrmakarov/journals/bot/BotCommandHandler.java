@@ -12,6 +12,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+/**
+ * Handler for bot commands. Used HTML markup for formatting messages because "MarkdownV2"
+ * https://core.telegram.org/bots/api#markdownv2-style is too restrictive - need escape all [1..126]
+ * characters.
+ */
 @Service
 public class BotCommandHandler {
 
@@ -112,19 +117,19 @@ public class BotCommandHandler {
             "Bot allows to create and view journals with answers on questions for each session (before and after), players can answer questions one-by-one, and admin can view all journals.\n\n");
 
     if (role == UserRole.ADMIN) {
-      help.append("👨‍🏫 *Admin Commands:*\n");
+      help.append("👨‍🏫 <b>Admin Commands:</b>\n");
       help.append("/session - View/replace current session\n");
       help.append("/set_questions - Set current session questions\n");
       help.append("/participants - View all participants\n");
       help.append("/promote - Promote a user to admin role\n\n");
     }
 
-    help.append("👤 *Player Commands:*\n");
+    help.append("👤 <b>Player Commands:</b>\n");
     help.append("/before - Answer pre-session questions\n");
     help.append("/after - Answer post-session questions\n");
     help.append("/last - View last journal\n");
     help.append("/last5 - View last 5 journals\n");
-    help.append("/last50 - View last 50 journals\n");
+    help.append("/last50 - View last 50 journals");
 
     return help.toString();
   }
@@ -214,7 +219,7 @@ public class BotCommandHandler {
 
     // Update user state and start flow of answering questions.
     userService.setQuestionFlowState(user.id(), activeSession.id(), 0);
-    return "📝 *Session:* "
+    return "📝 <b>Session:</b> "
         + activeSession.name()
         + " (created: "
         + activeSession.createdAt().format(DATETIME_FORMATTER)
@@ -256,7 +261,7 @@ public class BotCommandHandler {
 
     // Update user state and start flow of answering questions.
     userService.setQuestionFlowState(user.id(), activeSession.id(), currentIndex);
-    return "📝 *Session:* "
+    return "📝 <b>Session:</b> "
         + activeSession.name()
         + " (created: "
         + activeSession.createdAt().format(DATETIME_FORMATTER)
@@ -285,7 +290,6 @@ public class BotCommandHandler {
             .append(journalWithQuestion.journal().answer())
             .append("\n");
       }
-      sb.append("\n");
     }
     return sb.toString();
   }
@@ -313,12 +317,9 @@ public class BotCommandHandler {
     if (admins.isEmpty()) {
       return "No admins found.";
     }
-    StringBuilder response = new StringBuilder("📋 *Admins:*\n\n");
+    StringBuilder response = new StringBuilder("📋 <b>Admins:</b>\n");
     for (User admin : admins) {
-      response
-          .append("👤 ")
-          .append(admin.getDisplayName())
-          .append("\n");
+      response.append("👤 ").append(admin.getDisplayName()).append("\n");
     }
     return response.toString();
   }
@@ -335,7 +336,7 @@ public class BotCommandHandler {
       return "No participants found.";
     }
 
-    StringBuilder response = new StringBuilder("📋 *Participants:*\n\n");
+    StringBuilder response = new StringBuilder("📋 <b>Participants:</b>\n");
     for (Participant participant : participants) {
       // Skip users with no sessions.
       if (participant.sessionCount() == 0) {
@@ -501,7 +502,7 @@ public class BotCommandHandler {
    * @return SessionDisplayResult containing display text, session, and hasQuestions flag
    */
   private SessionDisplayResult buildSessionAndQuestionsDisplay(Session activeSession) {
-    StringBuilder response = new StringBuilder("📝 *Current Session:*\n");
+    StringBuilder response = new StringBuilder("📝 <b>Current Session:</b>\n");
     response.append("Name: ").append(activeSession.name()).append("\n");
     response
         .append("Created: ")
@@ -509,7 +510,7 @@ public class BotCommandHandler {
         .append("\n\n");
     String currentQuestionsDisplay = buildCurrentQuestionsDisplay(activeSession);
     if (!currentQuestionsDisplay.isEmpty()) {
-      response.append("📋 *Current Questions:*\n");
+      response.append("📋 <b>Questions:</b>\n");
       response.append(currentQuestionsDisplay);
     } else {
       response.append(
@@ -522,7 +523,7 @@ public class BotCommandHandler {
   private String buildCurrentQuestionsDisplay(Session activeSession) {
     StringBuilder response = new StringBuilder();
     sessionService.getQuestions(activeSession.id()).stream()
-        .map(q -> "- " + q.type() + ": " + q.text() + "\n")
+        .map(q -> q.type() + ": " + q.text() + "\n")
         .forEach(response::append);
     if (response.length() > 0) {
       response.append("\n");

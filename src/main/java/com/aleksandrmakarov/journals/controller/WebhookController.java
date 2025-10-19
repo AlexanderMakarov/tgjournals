@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
+import org.telegram.telegrambots.meta.api.methods.botapimethods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 /**
@@ -38,7 +38,6 @@ public class WebhookController {
    */
   @PostMapping
   public ResponseEntity<?> webhook(@RequestBody Update update, HttpServletRequest request) {
-    logger.debug("Received webhook request with update ID: {}", update.getUpdateId());
 
     // Validate webhook security
     var validationResult = webhookSecurityService.validateWebhookRequest(request);
@@ -52,15 +51,15 @@ public class WebhookController {
 
     try {
       // Process the webhook update through the bot
-      BotApiMethod<?> response = bot.onWebhookUpdateReceived(update);
+      BotApiMethod<?> response = bot.consumeUpdate(update);
 
       if (response != null) {
-        logger.debug("Webhook processed successfully, returning bot response");
-        return ResponseEntity.ok(response);
-      } else {
-        logger.debug("Webhook processed successfully, no response needed");
-        return ResponseEntity.ok("OK");
+        // Send the response to Telegram using the bot's API.
+        bot.execute(response);
       }
+
+      // Always return OK to Telegram.
+      return ResponseEntity.ok("OK");
     } catch (Exception e) {
       logger.error(
           "Error processing webhook update {}: {}", update.getUpdateId(), e.getMessage(), e);

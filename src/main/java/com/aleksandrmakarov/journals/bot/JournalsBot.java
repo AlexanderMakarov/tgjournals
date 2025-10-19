@@ -5,13 +5,15 @@ import com.aleksandrmakarov.journals.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.telegram.telegrambots.bots.TelegramWebhookBot;
-import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
+import org.telegram.telegrambots.client.AbstractTelegramClient;
+import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
+import org.telegram.telegrambots.meta.api.methods.botapimethods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.webhook.TelegramWebhookBot;
 
 /** Telegram bot that handles commands and messages from users. */
-public class JournalsBot extends TelegramWebhookBot {
+public class JournalsBot implements TelegramWebhookBot {
 
   private static final Logger logger = LoggerFactory.getLogger(JournalsBot.class);
 
@@ -22,22 +24,31 @@ public class JournalsBot extends TelegramWebhookBot {
   private final String botToken;
   private final String botUsername;
   private final String webhookPath;
+  private final AbstractTelegramClient telegramClient;
 
   public JournalsBot(String botToken, String botUsername, String webhookPath) {
-    super(botToken);
     this.botToken = botToken;
     this.botUsername = botUsername;
     this.webhookPath = webhookPath;
+    this.telegramClient = new OkHttpTelegramClient(botToken);
   }
 
-  @Override
   public String getBotUsername() {
     return botUsername;
   }
 
-  @Override
   public String getBotToken() {
     return this.botToken;
+  }
+
+  public void execute(BotApiMethod<?> method) {
+    try {
+      telegramClient.execute(method);
+      logger.debug("Successfully sent message to Telegram");
+    } catch (Exception e) {
+      logger.error("Error executing Telegram API method: {}", e.getMessage(), e);
+      throw new RuntimeException("Failed to send message to Telegram", e);
+    }
   }
 
   @Override
@@ -46,7 +57,7 @@ public class JournalsBot extends TelegramWebhookBot {
   }
 
   @Override
-  public BotApiMethod<?> onWebhookUpdateReceived(Update update) {
+  public BotApiMethod<?> consumeUpdate(Update update) {
     logger.debug("Received webhook update: {}", update.getUpdateId());
 
     if (update.hasMessage() && update.getMessage().getText() != null) {
@@ -96,10 +107,27 @@ public class JournalsBot extends TelegramWebhookBot {
   }
 
   private SendMessage createSendMessage(Long chatId, String text) {
-    SendMessage message = new SendMessage();
-    message.setChatId(chatId.toString());
-    message.setText(text);
-    message.setParseMode("Markdown");
-    return message;
+    return SendMessage.builder()
+        .chatId(chatId.toString())
+        .text(text)
+        // Used HTML markup for formatting messages because "MarkdownV2"
+        // https://core.telegram.org/bots/api#markdownv2-style
+        // is too restrictive - need escape all [1..126] characters.
+        .parseMode("HTML")
+        .build();
+  }
+
+  @Override
+  public void runDeleteWebhook() {
+    // Implementation for deleting webhook
+    // This is typically handled by the application configuration
+    logger.debug("Delete webhook requested");
+  }
+
+  @Override
+  public void runSetWebhook() {
+    // Implementation for setting webhook
+    // This is typically handled by the application configuration
+    logger.debug("Set webhook requested");
   }
 }

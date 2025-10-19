@@ -1,9 +1,9 @@
 package com.aleksandrmakarov.journals.repository;
 
+import com.aleksandrmakarov.journals.model.Participant;
 import com.aleksandrmakarov.journals.model.StateType;
 import com.aleksandrmakarov.journals.model.User;
 import com.aleksandrmakarov.journals.model.UserRole;
-import com.aleksandrmakarov.journals.model.Participant;
 import com.aleksandrmakarov.journals.util.TimestampUtils;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
@@ -53,9 +53,7 @@ public class UserRepository {
     this.participantRowMapper =
         (rs, rowNum) -> {
           return new Participant(
-            rs.getLong("id"),
-            userRowMapper.mapRow(rs, rowNum),
-            rs.getInt("session_count"));
+              userRowMapper.mapRow(rs, rowNum), rs.getInt("session_count"));
         };
   }
 
@@ -162,18 +160,18 @@ public class UserRepository {
   }
 
   /**
-   * Finds all participants ordered by their last journal entry date.
-   * For each participant, count the number of sessions participated in.
+   * Finds all participants ordered by their last journal entry date. For each participant, count
+   * the number of sessions participated in.
    *
    * @return List of participants sorted by last journal date (most recent first).
    */
   public List<Participant> findParticipantsOrderedByLastJournal() {
     return jdbcTemplate.query(
-      "SELECT u.*, COUNT(DISTINCT j.session_id) as session_count FROM users u "
-        + "LEFT JOIN journals j ON u.id = j.user_id "
-        + "LEFT JOIN sessions s ON j.session_id = s.id "
-        + "GROUP BY u.id "
-        + "ORDER BY MAX(s.created_at) DESC NULLS LAST",
+        "SELECT u.*, COUNT(DISTINCT j.session_id) as session_count FROM users u "
+            + "LEFT JOIN journals j ON u.id = j.user_id "
+            + "LEFT JOIN sessions s ON j.session_id = s.id "
+            + "GROUP BY u.id "
+            + "ORDER BY MAX(s.created_at) DESC NULLS LAST",
         participantRowMapper);
   }
 
