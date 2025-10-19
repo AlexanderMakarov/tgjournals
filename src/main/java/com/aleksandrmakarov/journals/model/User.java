@@ -20,8 +20,7 @@ public record User(
     LocalDateTime stateUpdatedAt) {
 
   /**
-   * Returns a formatted display name for the user. Combines first and last name, or falls back to
-   * username, or "Unknown".
+   * Returns a formatted display name for the user with {@code @username}.
    *
    * @return Formatted display name
    */
@@ -32,9 +31,9 @@ public record User(
       if (name.length() > 0) name.append(" ");
       name.append(lastName);
     }
-    if (name.length() == 0 && username != null) {
-      name.append("@").append(username);
+    if (username != null) {
+      name.append(" (@").append(username).append(")");
     }
-    return name.length() > 0 ? name.toString() : "Unknown";
+    return name.toString();
   }
 }

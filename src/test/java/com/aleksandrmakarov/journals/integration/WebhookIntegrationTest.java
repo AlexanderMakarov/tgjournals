@@ -89,7 +89,7 @@ public class WebhookIntegrationTest {
     return new TestUser(user.telegramId(), user.username(), user.firstName(), user.lastName());
   }
 
-  private TestUser createPlayerUser() {
+  private User createPlayerUser() {
     User user =
         new User(
             null,
@@ -104,7 +104,7 @@ public class WebhookIntegrationTest {
             0,
             null);
     user = userRepository.save(user);
-    return new TestUser(user.telegramId(), user.username(), user.firstName(), user.lastName());
+    return user;
   }
 
   private Update createUpdate(TestUser user, String messageText) {
@@ -213,9 +213,9 @@ public class WebhookIntegrationTest {
   @Test
   void test_after_noActiveSession() {
     // Arrange
-    TestUser player = createPlayerUser();
+    createPlayerUser();
     // Act
-    ResponseEntity<String> response = sendWebhookRequest(createUpdate(player, "/after"));
+    ResponseEntity<String> response = sendWebhookRequest(createUpdate(PLAYER, "/after"));
     // Assert
     String body = response.getBody();
     assertResponseContains(
@@ -225,9 +225,9 @@ public class WebhookIntegrationTest {
   @Test
   void test_last_noJournals() {
     // Arrange
-    TestUser player = createPlayerUser();
+    createPlayerUser();
     // Act
-    ResponseEntity<String> response = sendWebhookRequest(createUpdate(player, "/last"));
+    ResponseEntity<String> response = sendWebhookRequest(createUpdate(PLAYER, "/last"));
     // Assert
     String body = response.getBody();
     assertResponseContains(body, "No journals found.");
@@ -274,8 +274,8 @@ public class WebhookIntegrationTest {
   @Test
   void test_last5_manyOptions() {
     // Arrange
-    TestUser player = createPlayerUser();
-    Long playerId = userRepository.findByTelegramId(player.telegramId()).orElseThrow().id();
+    User player = createPlayerUser();
+    Long playerId = player.id();
     // Session 1 has all questions answered.
     LocalDateTime time = LocalDateTime.of(2025, 10, 17, 12, 0, 0);
     Session session1 = sessionRepository.save(new Session(null, "Session 1", time, time));
@@ -319,14 +319,40 @@ public class WebhookIntegrationTest {
   }
 
   @Test
-  void test_participants_noParticipants() {
+  void test_participants_noParticipantsWithJournals() {
     // Arrange
     TestUser admin = createAdminUser();
     // Act
     ResponseEntity<String> response = sendWebhookRequest(createUpdate(admin, "/participants"));
     // Assert
     String body = response.getBody();
-    assertResponseContains(body, "📋 *Participants:*\n\n👤 (ADMIN) Coach Smith - 0 journals\n");
+    assertResponseContains(body, "📋 *Participants:*\n\n");
+  }
+
+  @Test
+  void test_participants_twoParticipantsWithJournals() {
+    // Arrange
+    LocalDateTime now = LocalDateTime.now();
+    TestUser admin = createAdminUser();
+    User player1 = createPlayerUser();
+    // Session 1 has one question answered.
+    Session session1 = sessionRepository.save(new Session(null, "Session 1", now, now));
+    Question question1 = new Question(null, "Question 1", QuestionType.BEFORE, 1, session1.id());
+    questionRepository.save(question1);
+    // Session 2 has two questions answered.
+    Session session2 = sessionRepository.save(new Session(null, "Session 2", now, now));
+    Question question21 = new Question(null, "Question 21", QuestionType.AFTER, 1, session2.id());
+    Question question22 = new Question(null, "Question 22", QuestionType.AFTER, 2, session2.id());
+    List<Long> question2Ids = questionRepository.saveBatch(List.of(question21, question22));
+    journalRepository.saveBatch(List.of(
+        new Journal(null, "Answer 21", now, player1.id(), session2.id(), question2Ids.get(0)),
+        new Journal(null, "Answer 22", now, player1.id(), session2.id(), question2Ids.get(1)))
+    );
+    // Act
+    ResponseEntity<String> response = sendWebhookRequest(createUpdate(admin, "/participants"));
+    // Assert
+    String body = response.getBody();
+    assertResponseContains(body, "📋 *Participants:*\n\n👤 Player Johnson (@player_user) - 1 session(s)\n");
   }
 
   @Test

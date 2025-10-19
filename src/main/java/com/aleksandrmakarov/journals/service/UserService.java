@@ -1,6 +1,7 @@
 package com.aleksandrmakarov.journals.service;
 
 import com.aleksandrmakarov.journals.model.StateType;
+import com.aleksandrmakarov.journals.model.Participant;
 import com.aleksandrmakarov.journals.model.User;
 import com.aleksandrmakarov.journals.model.UserRole;
 import com.aleksandrmakarov.journals.repository.UserRepository;
@@ -73,7 +74,7 @@ public class UserService {
     return userRepository.findAllByRole(UserRole.ADMIN);
   }
 
-  public List<User> getParticipantsOrderedByLastJournal() {
+  public List<Participant> getParticipantsOrderedByLastJournal() {
     return userRepository.findParticipantsOrderedByLastJournal();
   }
 

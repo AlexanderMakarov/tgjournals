@@ -318,9 +318,7 @@ public class BotCommandHandler {
       response
           .append("👤 ")
           .append(admin.getDisplayName())
-          .append(" (@")
-          .append(admin.username())
-          .append(")\n");
+          .append("\n");
     }
     return response.toString();
   }
@@ -332,24 +330,23 @@ public class BotCommandHandler {
   private String handleParticipantsCommand(User user) {
     requireAdmin(user);
 
-    List<User> participants = userService.getParticipantsOrderedByLastJournal();
+    List<Participant> participants = userService.getParticipantsOrderedByLastJournal();
     if (participants.isEmpty()) {
       return "No participants found.";
     }
 
     StringBuilder response = new StringBuilder("📋 *Participants:*\n\n");
-    for (User participant : participants) {
-      // TODO: get number of journals in one query.
-      Long journalCount = journalService.getUserJournalCount(participant);
-      response.append("👤 ");
-      if (participant.role() != UserRole.PLAYER) {
-        response.append("(").append(participant.role()).append(") ");
+    for (Participant participant : participants) {
+      // Skip users with no sessions.
+      if (participant.sessionCount() == 0) {
+        continue;
       }
       response
-          .append(participant.getDisplayName())
+          .append("👤 ")
+          .append(participant.user().getDisplayName())
           .append(" - ")
-          .append(journalCount)
-          .append(" journals\n");
+          .append(participant.sessionCount())
+          .append(" session(s)\n");
     }
     return response.toString();
   }
@@ -478,7 +475,7 @@ public class BotCommandHandler {
         // If we got next question of type "after" - stop flow for now.
         if (nextQuestion.type() == QuestionType.AFTER) {
           userService.clearUserState(user.id(), false);
-          return "✅ Done for now, good luck with the session, run `/after` command once you finish it.";
+          return "✅ Done for now, good luck with the session, run /after command once you finish it.";
         }
 
         // If we got "before" question after "after" question - it is a bug.
