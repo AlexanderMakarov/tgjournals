@@ -1,8 +1,8 @@
 package com.aleksandrmakarov.journals.controller;
 
-import com.aleksandrmakarov.journals.repository.JournalRepositoryInterface;
-import com.aleksandrmakarov.journals.repository.SessionRepositoryInterface;
-import com.aleksandrmakarov.journals.repository.UserRepositoryInterface;
+import com.aleksandrmakarov.journals.repository.JournalRepository;
+import com.aleksandrmakarov.journals.repository.SessionRepository;
+import com.aleksandrmakarov.journals.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -30,9 +30,9 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class AnonymousController {
 
-  private final UserRepositoryInterface userRepository;
-  private final SessionRepositoryInterface sessionRepository;
-  private final JournalRepositoryInterface journalRepository;
+  private final UserRepository userRepository;
+  private final SessionRepository sessionRepository;
+  private final JournalRepository journalRepository;
 
   private final AtomicReference<CachedCounts> cachedCounts = new AtomicReference<>();
   private static final long CACHE_DURATION_SECONDS = 60; // 1 minute

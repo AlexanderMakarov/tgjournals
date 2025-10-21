@@ -10,10 +10,10 @@ import com.aleksandrmakarov.journals.model.QuestionType;
 import com.aleksandrmakarov.journals.model.Session;
 import com.aleksandrmakarov.journals.model.User;
 import com.aleksandrmakarov.journals.model.UserRole;
-import com.aleksandrmakarov.journals.repository.JournalRepository;
-import com.aleksandrmakarov.journals.repository.QuestionRepository;
-import com.aleksandrmakarov.journals.repository.SessionRepository;
-import com.aleksandrmakarov.journals.repository.UserRepository;
+import com.aleksandrmakarov.journals.repository.SqliteJournalRepository;
+import com.aleksandrmakarov.journals.repository.SqliteQuestionRepository;
+import com.aleksandrmakarov.journals.repository.SqliteSessionRepository;
+import com.aleksandrmakarov.journals.repository.SqliteUserRepository;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,10 +41,10 @@ public class WebhookIntegrationTest {
 
   @Autowired private TestRestTemplate restTemplate;
 
-  @Autowired private UserRepository userRepository;
-  @Autowired private SessionRepository sessionRepository;
-  @Autowired private QuestionRepository questionRepository;
-  @Autowired private JournalRepository journalRepository;
+  @Autowired private SqliteUserRepository userRepository;
+  @Autowired private SqliteSessionRepository sessionRepository;
+  @Autowired private SqliteQuestionRepository questionRepository;
+  @Autowired private SqliteJournalRepository journalRepository;
   @Autowired private TestJournalsBot testBot;
 
   // Test user record
@@ -151,7 +151,9 @@ public class WebhookIntegrationTest {
     // Act
     String response = sendWebhookRequestAndGetResponse(PLAYER, "/start");
     // Assert
-    assertThat(response).contains("Welcome to AM Journals Bot. Use /before and /after to answer questions before and after the session. Use /admins to see list of admins.");
+    assertThat(response)
+        .contains(
+            "Welcome to AM Journals Bot. Use /before and /after to answer questions before and after the session. Use /admins to see list of admins.");
   }
 
   @Test
@@ -159,7 +161,9 @@ public class WebhookIntegrationTest {
     // Act
     String response = sendWebhookRequestAndGetResponse(PLAYER, "/help");
     // Assert
-    assertThat(response).contains("Bot allows to create and view journals with answers on questions for each session (before and after), players can answer questions one-by-one, and admin can view all journals.\n\n👤 <b>Player Commands:</b>\n/before - Answer pre-session questions\n/after - Answer post-session questions\n/last - View last journal\n/last5 - View last 5 journals\n/last50 - View last 50 journals");
+    assertThat(response)
+        .contains(
+            "Bot allows to create and view journals with answers on questions for each session (before and after), players can answer questions one-by-one, and admin can view all journals.\n\n👤 <b>Player Commands:</b>\n/before - Answer pre-session questions\n/after - Answer post-session questions\n/last - View last journal\n/last5 - View last 5 journals\n/last50 - View last 50 journals");
   }
 
   @Test
@@ -169,7 +173,9 @@ public class WebhookIntegrationTest {
     // Act
     String response = sendWebhookRequestAndGetResponse(admin, "/help");
     // Assert
-    assertThat(response).contains("Bot allows to create and view journals with answers on questions for each session (before and after), players can answer questions one-by-one, and admin can view all journals.\n\n👨‍🏫 <b>Admin Commands:</b>\n/session - View/replace current session\n/set_questions - Set current session questions\n/participants - View all participants\n/promote - Promote a user to admin role\n\n👤 <b>Player Commands:</b>\n/before - Answer pre-session questions\n/after - Answer post-session questions\n/last - View last journal\n/last5 - View last 5 journals\n/last50 - View last 50 journals");
+    assertThat(response)
+        .contains(
+            "Bot allows to create and view journals with answers on questions for each session (before and after), players can answer questions one-by-one, and admin can view all journals.\n\n👨‍🏫 <b>Admin Commands:</b>\n/session - View/replace current session\n/set_questions - Set current session questions\n/participants - View all participants\n/promote - Promote a user to admin role\n\n👤 <b>Player Commands:</b>\n/before - Answer pre-session questions\n/after - Answer post-session questions\n/last - View last journal\n/last5 - View last 5 journals\n/last50 - View last 50 journals");
   }
 
   @Test
@@ -177,7 +183,8 @@ public class WebhookIntegrationTest {
     // Act
     String response = sendWebhookRequestAndGetResponse(PLAYER, "/before");
     // Assert
-    assertThat(response).contains("No active session found. Please ask your admin to create one first.");
+    assertThat(response)
+        .contains("No active session found. Please ask your admin to create one first.");
   }
 
   @Test
@@ -187,7 +194,8 @@ public class WebhookIntegrationTest {
     // Act
     String response = sendWebhookRequestAndGetResponse(PLAYER, "/after");
     // Assert
-    assertThat(response).contains("No active session found. Please ask your admin to create one first.");
+    assertThat(response)
+        .contains("No active session found. Please ask your admin to create one first.");
   }
 
   @Test
@@ -275,7 +283,9 @@ public class WebhookIntegrationTest {
 
     // Assert. Expect to see journals from 2 sessions, session 1 with all questions
     // answered, session 3 with only one question answered.
-    assertThat(response).contains("Last 5 journals:\n\n📅 2025-10-17 12:00:00 'Session 1':\n(BEFORE) S1 B1 - S1 B1 answer\n(BEFORE) S1 B2 - S1 B2 answer\n(AFTER) S1 A1 - S1 A1 answer\n(AFTER) S1 A2 - S1 A2 answer\n📅 2025-10-19 12:00:00 'Session 3':\n(BEFORE) S3 B1 - S3 B1 answer\n");
+    assertThat(response)
+        .contains(
+            "Last 5 journals:\n\n📅 2025-10-17 12:00:00 'Session 1':\n(BEFORE) S1 B1 - S1 B1 answer\n(BEFORE) S1 B2 - S1 B2 answer\n(AFTER) S1 A1 - S1 A1 answer\n(AFTER) S1 A2 - S1 A2 answer\n📅 2025-10-19 12:00:00 'Session 3':\n(BEFORE) S3 B1 - S3 B1 answer\n");
   }
 
   @Test
@@ -310,7 +320,8 @@ public class WebhookIntegrationTest {
     // Act
     String response = sendWebhookRequestAndGetResponse(admin, "/participants");
     // Assert
-    assertThat(response).contains("📋 <b>Participants:</b>\n👤 Player Johnson (@player_user) - 1 session(s)");
+    assertThat(response)
+        .contains("📋 <b>Participants:</b>\n👤 Player Johnson (@player_user) - 1 session(s)");
   }
 
   @Test
@@ -336,13 +347,19 @@ public class WebhookIntegrationTest {
 
     // Step 1: Coach creates a session.
     String response = sendWebhookRequestAndGetResponse(admin, "/session Default Session");
-    assertThat(response).contains("✅ Session 'Default Session' created successfully!\n\nNo questions found for active session.\n" + QUESTIONS_UPDATE_EXPLANATION);
+    assertThat(response)
+        .contains(
+            "✅ Session 'Default Session' created successfully!\n\nNo questions found for active session.\n"
+                + QUESTIONS_UPDATE_EXPLANATION);
 
     // Step 2: Coach provides questions.
     Update coachSetsQuestions =
         createUpdate(admin, "Before: B1?\nBefore: B2\nAfter: A1\nAfter: A2");
-    response = sendWebhookRequestAndGetResponse(admin, "Before: B1?\nBefore: B2\nAfter: A1\nAfter: A2");
-    assertThat(response).contains("Questions updated successfully to:\nBEFORE: B1?\nBEFORE: B2\nAFTER: A1\nAFTER: A2\n\n");
+    response =
+        sendWebhookRequestAndGetResponse(admin, "Before: B1?\nBefore: B2\nAfter: A1\nAfter: A2");
+    assertThat(response)
+        .contains(
+            "Questions updated successfully to:\nBEFORE: B1?\nBEFORE: B2\nAFTER: A1\nAFTER: A2\n\n");
 
     // Step 3: Player starts before questions.
     response = sendWebhookRequestAndGetResponse(PLAYER, "/before");
@@ -357,7 +374,9 @@ public class WebhookIntegrationTest {
     // Step 5: Player answers second 'before' question - should automatically
     // transition to 'after' questions.
     response = sendWebhookRequestAndGetResponse(PLAYER, "B2 answer");
-    assertThat(response).contains("✅ Done for now, good luck with the session, run /after command once you finish it.");
+    assertThat(response)
+        .contains(
+            "✅ Done for now, good luck with the session, run /after command once you finish it.");
 
     // Step 6: Player starts 'after' questions.
     response = sendWebhookRequestAndGetResponse(PLAYER, "/after");
@@ -376,7 +395,9 @@ public class WebhookIntegrationTest {
     // Step 9: Player checks their last journal.
     response = sendWebhookRequestAndGetResponse(PLAYER, "/last");
     assertThat(response).contains("Last journal:\n\n📅 ");
-    assertThat(response).contains(" 'Default Session':\n(BEFORE) B1? - B1 answer\n(BEFORE) B2 - B2 answer\n(AFTER) A1 - A1 answer\n(AFTER) A2 - A2 answer\n");
+    assertThat(response)
+        .contains(
+            " 'Default Session':\n(BEFORE) B1? - B1 answer\n(BEFORE) B2 - B2 answer\n(AFTER) A1 - A1 answer\n(AFTER) A2 - A2 answer\n");
   }
 
   @Test
@@ -399,16 +420,23 @@ public class WebhookIntegrationTest {
     // Step 2: Coach checks current questions
     response = sendWebhookRequestAndGetResponse(admin, "/set_questions");
     assertThat(response).contains("📝 <b>Current Session:</b>\nName: Default Session\nCreated: ");
-    assertThat(response).contains("\n📋 <b>Questions:</b>\nBEFORE: B1 initial?\nAFTER: A1 initial?");
+    assertThat(response)
+        .contains("\n📋 <b>Questions:</b>\nBEFORE: B1 initial?\nAFTER: A1 initial?");
 
     // Step 3: Coach updates questions
-    response = sendWebhookRequestAndGetResponse(admin, "Before: B1 updated?\nAfter: A1 updated?\nAfter: A2 updated?");
-    assertThat(response).contains("Questions updated successfully to:\nBEFORE: B1 updated?\nAFTER: A1 updated?\nAFTER: A2 updated?");
+    response =
+        sendWebhookRequestAndGetResponse(
+            admin, "Before: B1 updated?\nAfter: A1 updated?\nAfter: A2 updated?");
+    assertThat(response)
+        .contains(
+            "Questions updated successfully to:\nBEFORE: B1 updated?\nAFTER: A1 updated?\nAFTER: A2 updated?");
 
     // Step 4: Coach verifies updated questions
     response = sendWebhookRequestAndGetResponse(admin, "/set_questions");
     assertThat(response).contains("📝 <b>Current Session:</b>\nName: Default Session\nCreated: ");
-    assertThat(response).contains("\n📋 <b>Questions:</b>\nBEFORE: B1 updated?\nAFTER: A1 updated?\nAFTER: A2 updated?");
+    assertThat(response)
+        .contains(
+            "\n📋 <b>Questions:</b>\nBEFORE: B1 updated?\nAFTER: A1 updated?\nAFTER: A2 updated?");
   }
 
   @Test
@@ -425,13 +453,19 @@ public class WebhookIntegrationTest {
 
     // Step 1: Coach creates a session.
     String response = sendWebhookRequestAndGetResponse(admin, "/session Default Session");
-    assertThat(response).contains("✅ Session 'Default Session' created successfully!\n\n📝 <b>Current Session:</b>\nName: Default Session\nCreated: ");
-    assertThat(response).contains("\n📋 <b>Questions:</b>\nBEFORE: B1\nAFTER: A1\n\nUse /set_questions command if need to update questions.");
+    assertThat(response)
+        .contains(
+            "✅ Session 'Default Session' created successfully!\n\n📝 <b>Current Session:</b>\nName: Default Session\nCreated: ");
+    assertThat(response)
+        .contains(
+            "\n📋 <b>Questions:</b>\nBEFORE: B1\nAFTER: A1\n\nUse /set_questions command if need to update questions.");
 
     // Step 2: Coach runs /set_questions command.
     response = sendWebhookRequestAndGetResponse(admin, "/set_questions");
     assertThat(response).contains("📝 <b>Current Session:</b>\nName: Default Session\nCreated: ");
-    assertThat(response).contains("\n📋 <b>Questions:</b>\nBEFORE: B1\nAFTER: A1\n\n" + QUESTIONS_UPDATE_EXPLANATION);
+    assertThat(response)
+        .contains(
+            "\n📋 <b>Questions:</b>\nBEFORE: B1\nAFTER: A1\n\n" + QUESTIONS_UPDATE_EXPLANATION);
 
     // Step 3: Coach cancels update (empty string)
     response = sendWebhookRequestAndGetResponse(admin, "");
@@ -457,8 +491,12 @@ public class WebhookIntegrationTest {
 
     // Step 1: Admin creates a new session using `/session` command.
     String response = sendWebhookRequestAndGetResponse(admin, "/session New Training Session");
-    assertThat(response).contains("✅ Session 'New Training Session' created successfully!\n\n📝 <b>Current Session:</b>\nName: New Training Session\nCreated: ");
-    assertThat(response).contains("\n📋 <b>Questions:</b>\nBEFORE: B1\nAFTER: A1\n\nUse /set_questions command if need to update questions.");
+    assertThat(response)
+        .contains(
+            "✅ Session 'New Training Session' created successfully!\n\n📝 <b>Current Session:</b>\nName: New Training Session\nCreated: ");
+    assertThat(response)
+        .contains(
+            "\n📋 <b>Questions:</b>\nBEFORE: B1\nAFTER: A1\n\nUse /set_questions command if need to update questions.");
 
     // Step 2: Player uses `/before` command and gets the reused questions.
     response = sendWebhookRequestAndGetResponse(PLAYER, "/before");
@@ -467,7 +505,9 @@ public class WebhookIntegrationTest {
 
     // Step 3: Player answers the before question.
     response = sendWebhookRequestAndGetResponse(PLAYER, "B1 answer");
-    assertThat(response).contains("✅ Done for now, good luck with the session, run /after command once you finish it.");
+    assertThat(response)
+        .contains(
+            "✅ Done for now, good luck with the session, run /after command once you finish it.");
 
     // Step 4: Player uses /after command and gets the reused questions.
     response = sendWebhookRequestAndGetResponse(PLAYER, "/after");
@@ -479,8 +519,9 @@ public class WebhookIntegrationTest {
     assertThat(response).contains("✅ Done, thank you for your answers!");
 
     // Step 6: Player checks the journal.
-     response = sendWebhookRequestAndGetResponse(PLAYER, "/last");
-     assertThat(response).contains("Last journal:\n\n📅 ");
-     assertThat(response).contains(" 'New Training Session':\n(BEFORE) B1 - B1 answer\n(AFTER) A1 - A1 answer\n");
-   }
- }
+    response = sendWebhookRequestAndGetResponse(PLAYER, "/last");
+    assertThat(response).contains("Last journal:\n\n📅 ");
+    assertThat(response)
+        .contains(" 'New Training Session':\n(BEFORE) B1 - B1 answer\n(AFTER) A1 - A1 answer\n");
+  }
+}

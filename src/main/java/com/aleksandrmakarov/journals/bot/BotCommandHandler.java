@@ -2,9 +2,9 @@ package com.aleksandrmakarov.journals.bot;
 
 import com.aleksandrmakarov.journals.model.*;
 import com.aleksandrmakarov.journals.security.ForbiddenException;
-import com.aleksandrmakarov.journals.service.JournalService;
-import com.aleksandrmakarov.journals.service.SessionService;
-import com.aleksandrmakarov.journals.service.UserService;
+import com.aleksandrmakarov.journals.service.JournalServiceImpl;
+import com.aleksandrmakarov.journals.service.SqliteSessionImpl;
+import com.aleksandrmakarov.journals.service.UserServiceImpl;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,11 +23,11 @@ public class BotCommandHandler {
   /** Record containing session display information and metadata. */
   public record SessionDisplayResult(String displayText, Session session, boolean hasQuestions) {}
 
-  @Autowired private UserService userService;
+  @Autowired private UserServiceImpl userService;
 
-  @Autowired private SessionService sessionService;
+  @Autowired private SqliteSessionImpl sessionService;
 
-  @Autowired private JournalService journalService;
+  @Autowired private JournalServiceImpl journalService;
 
   public static final DateTimeFormatter DATETIME_FORMATTER =
       DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

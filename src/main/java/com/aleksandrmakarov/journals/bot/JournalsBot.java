@@ -1,7 +1,7 @@
 package com.aleksandrmakarov.journals.bot;
 
 import com.aleksandrmakarov.journals.security.ForbiddenException;
-import com.aleksandrmakarov.journals.service.UserService;
+import com.aleksandrmakarov.journals.service.UserServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +17,7 @@ public class JournalsBot implements TelegramWebhookBot {
 
   private static final Logger logger = LoggerFactory.getLogger(JournalsBot.class);
 
-  @Autowired private UserService userService;
+  @Autowired private UserServiceImpl userService;
 
   @Autowired private BotCommandHandler commandHandler;
 

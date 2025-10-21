@@ -1,12 +1,14 @@
 plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.6'
+	id 'com.diffplug.spotless' version '6.25.0'
 	id 'io.spring.dependency-management' version '1.1.6'
 	id 'org.graalvm.buildtools.native' version '0.10.1'
 }
 
 group = 'com.aleksandrmakarov'
 version = '0.0.1-SNAPSHOT'
+description = 'Journals TG bot'
 
 java {
 	toolchain {
@@ -48,6 +50,16 @@ configurations.all {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// Spotless configuration for code formatting
+spotless {
+	java {
+		googleJavaFormat('1.19.2')
+		removeUnusedImports()
+		trimTrailingWhitespace()
+		endWithNewline()
+	}
 }
 
 // Task to generate native image hints using the GraalVM tracing agent
@@ -127,6 +139,11 @@ graalvmNative {
 			buildArgs.add('-H:+UnlockExperimentalVMOptions')
 			buildArgs.add('-H:+RemoveSaturatedTypeFlows')
 			buildArgs.add('-H:+IncludeAllLocales')
+			
+			// Enable native access for JNI libraries like SQLite
+			if (System.getenv('STATIC_BUILD') == 'true') {
+				buildArgs.add('--enable-native-access=ALL-UNNAMED')
+			}
 		}
 	}
 }

@@ -7,17 +7,17 @@ import org.telegram.telegrambots.meta.api.methods.botapimethods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
 /**
- * Test Journals Bot for integration testing.
- * This bot captures the last response instead of sending it to Telegram.
+ * Test Journals Bot for integration testing. This bot captures the last response instead of sending
+ * it to Telegram.
  */
 @Configuration
 public class TestJournalsBot extends com.aleksandrmakarov.journals.bot.JournalsBot {
   private String lastResponse;
-  
+
   public TestJournalsBot(String botToken, String botUsername, String webhookPath) {
     super(botToken, botUsername, webhookPath);
   }
-  
+
   @Override
   public void execute(BotApiMethod<?> method) {
     // Capture the response instead of sending to Telegram
@@ -25,11 +25,11 @@ public class TestJournalsBot extends com.aleksandrmakarov.journals.bot.JournalsB
       lastResponse = sendMessage.getText();
     }
   }
-  
+
   public String getLastResponse() {
     return lastResponse;
   }
-  
+
   @Bean
   @Primary
   public static TestJournalsBot testJournalsBot() {
