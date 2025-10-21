@@ -1,18 +1,22 @@
 plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.6'
-	id 'io.spring.dependency-management' version '1.1.7'
-	id 'com.diffplug.spotless' version '6.25.0'
-	id 'org.graalvm.buildtools.native' version '0.11.1'
+	id 'io.spring.dependency-management' version '1.1.6'
+	id 'org.graalvm.buildtools.native' version '0.10.1'
 }
 
 group = 'com.aleksandrmakarov'
 version = '0.0.1-SNAPSHOT'
-description = 'Journals TG bot'
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(project.hasProperty('javaVersion') ? project.property('javaVersion') as Integer : 21)
+		languageVersion = JavaLanguageVersion.of(project.hasProperty('javaVersion') ? project.javaVersion : 21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
 	}
 }
 
@@ -46,19 +50,20 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
-// Ensure annotation processing works correctly
-tasks.withType(JavaCompile) {
-	options.annotationProcessorPath = configurations.annotationProcessor
-	options.compilerArgs += ['-parameters']
-}
-
-// Spotless configuration for code formatting
-spotless {
-	java {
-		googleJavaFormat('1.19.2')
-		removeUnusedImports()
-		trimTrailingWhitespace()
-		endWithNewline()
+// Task to generate native image hints using the GraalVM tracing agent
+task generateNativeHints(type: Exec) {
+	description = 'Generate native image hints using GraalVM tracing agent'
+	group = 'native'
+	
+	// First build the application
+	dependsOn 'bootJar'
+	
+	// Run the hint generation script
+	commandLine './generate-native-hints.sh'
+	
+	doLast {
+		println "Native image hints generated successfully!"
+		println "Hints are available in: src/main/resources/META-INF/native-image/com.aleksandrmakarov/tg-journals/"
 	}
 }
 
@@ -66,33 +71,62 @@ spotless {
 graalvmNative {
 	binaries {
 		main {
+			// Core framework initialization - package-level approach
 			buildArgs.add('--initialize-at-build-time=org.springframework')
 			buildArgs.add('--initialize-at-build-time=org.telegram')
 			buildArgs.add('--initialize-at-build-time=com.aleksandrmakarov.journals')
+			
+			// Based on build.gradle.analysis-for-native-image: Only 2 classes need build-time initialization
+			buildArgs.add('--initialize-at-build-time=org.apache.commons.logging.LogAdapter$Slf4jLocationAwareLog')
+			
+			// Logging packages - package-level approach for maintainability
+			buildArgs.add('--initialize-at-build-time=ch.qos.logback')
+			buildArgs.add('--initialize-at-build-time=org.apache.commons.logging')
+			buildArgs.add('--initialize-at-build-time=org.slf4j')
+			
+			// Jackson classes - package-level approach
+			buildArgs.add('--initialize-at-build-time=com.fasterxml.jackson')
+			
+			// YAML/SnakeYAML classes for Swagger/OpenAPI
+			buildArgs.add('--initialize-at-build-time=org.yaml.snakeyaml')
+			
+			// SQLite classes
+			buildArgs.add('--initialize-at-build-time=org.sqlite')
+			
+			// Spring Boot classes that need build-time initialization
+			buildArgs.add('--initialize-at-build-time=org.springframework.boot.json')
+			buildArgs.add('--initialize-at-build-time=org.springframework.boot.SpringApplicationShutdownHook')
+			buildArgs.add('--initialize-at-build-time=org.springframework.boot.SpringApplicationShutdownHook$ApplicationContextClosedListener')
+			
+			// Runtime initialization for classes that need it
 			buildArgs.add('--initialize-at-run-time=org.springframework.boot.autoconfigure')
 			buildArgs.add('--initialize-at-run-time=org.springframework.context')
-			// Spring Framework issue where VfsUtils is trying to detect JBoss VFS infrastructure at build time.
 			buildArgs.add('--initialize-at-run-time=org.springframework.core.io.VfsUtils')
 			buildArgs.add('--initialize-at-run-time=com.aleksandrmakarov.journals.config.TelegramBotConfig')
-			// Jackson classes that were initialized at build time
-			buildArgs.add('--initialize-at-run-time=com.fasterxml.jackson')
-			// Logback classes that were initialized at build time
-			buildArgs.add('--initialize-at-run-time=ch.qos.logback')
-			buildArgs.add('--initialize-at-run-time=org.slf4j')
+			
+			// JDK dynamic proxy support for @Transactional services
+			buildArgs.add('--initialize-at-run-time=com.aleksandrmakarov.journals.service.UserService')
+			buildArgs.add('--initialize-at-run-time=com.aleksandrmakarov.journals.service.SessionService')
+			buildArgs.add('--initialize-at-run-time=com.aleksandrmakarov.journals.service.JournalService')
+			buildArgs.add('--initialize-at-run-time=com.aleksandrmakarov.journals.repository.UserRepository')
+			
+			// Spring AOP support (JDK dynamic proxies)
+			buildArgs.add('--initialize-at-run-time=org.springframework.aop')
+			
+			// JDK dynamic proxy support - using reflection configuration instead of runtime initialization
+			
+			// Native image configuration
 			buildArgs.add('--no-fallback')
 			buildArgs.add('--enable-http')
 			buildArgs.add('--enable-https')
 			buildArgs.add('--enable-url-protocols=http,https')
 			buildArgs.add('-H:+AddAllCharsets')
-			buildArgs.add('-H:+IncludeAllLocales')
 			buildArgs.add('-H:+ReportExceptionStackTraces')
-			buildArgs.add('-H:+PrintClassInitialization')
-			buildArgs.add('-H:TraceClassInitialization=true')
+			
 			// Build optimizations
 			buildArgs.add('-H:+UnlockExperimentalVMOptions')
-			buildArgs.add('-H:+UseStringDeduplication')
 			buildArgs.add('-H:+RemoveSaturatedTypeFlows')
-			buildArgs.add('-H:+ReportUnsupportedElementsAtRuntime')
+			buildArgs.add('-H:+IncludeAllLocales')
 		}
 	}
 }

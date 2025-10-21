@@ -4,7 +4,7 @@ import com.aleksandrmakarov.journals.model.Participant;
 import com.aleksandrmakarov.journals.model.StateType;
 import com.aleksandrmakarov.journals.model.User;
 import com.aleksandrmakarov.journals.model.UserRole;
-import com.aleksandrmakarov.journals.repository.UserRepository;
+import com.aleksandrmakarov.journals.repository.UserRepositoryInterface;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -14,9 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
-public class UserService {
+public class UserService implements UserServiceInterface {
 
-  @Autowired private UserRepository userRepository;
+  @Autowired private UserRepositoryInterface userRepository;
 
   public User findOrCreateUser(
       Long telegramId, String username, String firstName, String lastName) {

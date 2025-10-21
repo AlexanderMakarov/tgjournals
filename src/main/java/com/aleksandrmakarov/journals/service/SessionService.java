@@ -4,9 +4,9 @@ import com.aleksandrmakarov.journals.model.Question;
 import com.aleksandrmakarov.journals.model.QuestionType;
 import com.aleksandrmakarov.journals.model.Session;
 import com.aleksandrmakarov.journals.model.SessionJournals;
-import com.aleksandrmakarov.journals.repository.JournalRepository;
-import com.aleksandrmakarov.journals.repository.QuestionRepository;
-import com.aleksandrmakarov.journals.repository.SessionRepository;
+import com.aleksandrmakarov.journals.repository.JournalRepositoryInterface;
+import com.aleksandrmakarov.journals.repository.QuestionRepositoryInterface;
+import com.aleksandrmakarov.journals.repository.SessionRepositoryInterface;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,13 +15,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
-public class SessionService {
+public class SessionService implements SessionServiceInterface {
 
-  @Autowired private SessionRepository sessionRepository;
+  @Autowired private SessionRepositoryInterface sessionRepository;
 
-  @Autowired private JournalRepository journalRepository;
+  @Autowired private JournalRepositoryInterface journalRepository;
 
-  @Autowired private QuestionRepository questionRepository;
+  @Autowired private QuestionRepositoryInterface questionRepository;
 
   public Session getActiveSession() {
     return sessionRepository.findActiveSession().orElse(null);

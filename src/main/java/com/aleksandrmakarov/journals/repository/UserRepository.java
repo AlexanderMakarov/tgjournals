@@ -16,7 +16,7 @@ import org.springframework.stereotype.Repository;
 /** Repository for managing User entities in the database. */
 @Repository
 @RequiredArgsConstructor
-public class UserRepository {
+public class UserRepository implements UserRepositoryInterface {
 
   private final JdbcTemplate jdbcTemplate;
 

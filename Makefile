@@ -163,7 +163,7 @@ native-build: ## Build GraalVM native image locally
 .PHONY: native-run
 native-run: ## Run native image locally
 	@echo "Running native image locally..."
-	@./build/native/nativeCompile/app
+	@./build/native/nativeCompile/tg-journals
 
 .PHONY: full-deploy
 full-deploy: native-build docker-build gcp-deploy ## Complete deployment pipeline

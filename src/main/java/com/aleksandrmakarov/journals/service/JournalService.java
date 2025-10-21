@@ -4,7 +4,7 @@ import com.aleksandrmakarov.journals.model.Journal;
 import com.aleksandrmakarov.journals.model.Question;
 import com.aleksandrmakarov.journals.model.Session;
 import com.aleksandrmakarov.journals.model.User;
-import com.aleksandrmakarov.journals.repository.JournalRepository;
+import com.aleksandrmakarov.journals.repository.JournalRepositoryInterface;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,9 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
-public class JournalService {
+public class JournalService implements JournalServiceInterface {
 
-  @Autowired private JournalRepository journalRepository;
+  @Autowired private JournalRepositoryInterface journalRepository;
 
   public Journal saveJournal(String answer, User user, Session session, Question question) {
     Journal journal =

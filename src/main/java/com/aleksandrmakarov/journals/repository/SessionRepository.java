@@ -16,7 +16,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 @RequiredArgsConstructor
-public class SessionRepository {
+public class SessionRepository implements SessionRepositoryInterface {
 
   private final JdbcTemplate jdbcTemplate;
 

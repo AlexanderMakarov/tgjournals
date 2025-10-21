@@ -16,7 +16,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class JournalRepository {
+public class JournalRepository implements JournalRepositoryInterface {
 
   private final JdbcTemplate jdbcTemplate;
 

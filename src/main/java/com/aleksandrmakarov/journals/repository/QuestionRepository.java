@@ -8,7 +8,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class QuestionRepository {
+public class QuestionRepository implements QuestionRepositoryInterface {
 
   private final JdbcTemplate jdbcTemplate;
 
