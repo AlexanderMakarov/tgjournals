@@ -90,16 +90,13 @@ make check-webhook
 
 ## 3. Production Deployment
 
-For production, deploy your application to a server with a public domain and set the webhook:
-
-```bash
-# Set production webhook (will ask for your domain URL)
-make set-prod
-```
+For production, deploy your application to a server with a public domain and set the webhook on Telegram server side to avoid abusing by third parties.
 
 ### Webhook Security
 
-**Important**: The webhook endpoint is protected by a secret token to prevent unauthorized access.
+To set webhook on Telegram server side, you need to generate a secret token and add it to your `.env` file.
+
+#### How to generate a secret token
 
 1. **Generate a strong secret token**:
    ```bash
@@ -118,6 +115,17 @@ make set-prod
    - Log security violations for monitoring
 
 **Without a secret token**: The webhook will be open to everyone (development mode only).
+
+#### How to set webhook on Telegram server side
+
+```bash
+# Set production webhook (will ask for your domain URL)
+make set-prod
+```
+
+### Deployment to GCP Cloud Functions
+
+TODO see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for more details.
 
 ## 4. Webhook Management
 
@@ -188,32 +196,10 @@ make db-restore        # Restore database from backup
 make health            # Check application health
 ```
 
-## 8. Security Considerations
+# Roadmap/TODO
 
-### Webhook Security
-
-The webhook endpoint (`/webhook`) is protected by a secret token to prevent unauthorized access:
-
-- **Development**: If no `TELEGRAM_WEBHOOK_SECRET` is set, webhook accepts all requests
-- **Production**: Must set `TELEGRAM_WEBHOOK_SECRET` for security
-- **Validation**: Each request is validated against the secret token
-- **Logging**: Unauthorized attempts are logged with IP addresses
-
-### Environment Variables Security
-
-Never commit your `.env` file to version control:
-
-```bash
-# .env is already in .gitignore
-# Keep your secrets secure:
-TELEGRAM_BOT_TOKEN=your_secret_token
-TELEGRAM_WEBHOOK_SECRET=your_webhook_secret
-```
-
-### Production Deployment Security
-
-1. **Use HTTPS**: Always use HTTPS in production
-2. **Set webhook secret**: Configure `TELEGRAM_WEBHOOK_SECRET`
-3. **Monitor logs**: Watch for unauthorized access attempts
-4. **Regular updates**: Keep dependencies updated
-5. **Database security**: SQLite file permissions should be restricted
+- [ ] Add multiple teams.
+- [ ] Add support for localization + Russian.
+- [ ] Send notifications to players about new sessions (to avoid spam players can just delete bot - journals will stay anyway).
+- [ ] Auto-remove old journals or extend ability to view them.
+- [ ] Search in team journals by text (admin only).

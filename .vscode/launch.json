@@ -1,0 +1,40 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Debug with Gradle (one-step)",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 5005,
+            "preLaunchTask": "gradle: bootRun-debug",
+            "postDebugTask": "gradle: stop-bootRun"
+        },
+        {
+            "type": "java",
+            "name": "Attach to Gradle bootRun",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 5005
+        },
+        {
+            "type": "java",
+            "name": "Debug All Tests (Gradle)",
+            "request": "launch",
+            "mainClass": "org.junit.platform.console.ConsoleLauncher",
+            "args": "--scan-classpath",
+            "vmArgs": "-Dspring.profiles.active=test",
+            "env": {
+                "TELEGRAM_BOT_TOKEN": "test-token",
+                "TELEGRAM_BOT_USERNAME": "test-bot",
+                "TELEGRAM_WEBHOOK_URL": "http://localhost:8080/webhook"
+            },
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "preLaunchTask": "gradle: test"
+        }
+    ]
+}

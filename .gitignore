@@ -34,9 +34,6 @@ out/
 /nbdist/
 /.nb-gradle/
 
-### VS Code ###
-.vscode/
-
 ### Environment files ###
 .env
 logs.log

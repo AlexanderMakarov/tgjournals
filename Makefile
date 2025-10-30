@@ -125,8 +125,13 @@ docker-build: ## Build Docker image for Google Cloud Functions
 .PHONY: docker-run
 docker-run: ## Run Docker container locally
 	@echo "Running Docker container locally..."
-	@docker run -p 8080:8080 --env-file .env tg-journals:latest
+	@mkdir -p $(PWD)/data
+	@docker run -p 8080:8080 --env-file .env -v $(PWD)/data:/mnt/disk tg-journals:latest
 
+.PHONY: docker-stop
+docker-stop: ## Stop Docker containers using port 8080
+	@echo "Stopping Docker containers using port 8080..."
+	@docker ps -q --filter "publish=8080" | xargs -r docker stop
 
 .PHONY: gcp-deploy
 gcp-deploy: ## Deploy to Google Cloud Functions using Pulumi
@@ -153,7 +158,27 @@ gcp-delete: ## Delete Google Cloud Functions deployment
 	@cd pulumi && pulumi destroy --yes
 	@echo "✅ Deployment deleted successfully!"
 
-# Native compilation tasks
+# Generate native image hints using GraalVM tracing agent.
+.PHONY: native-update-hints
+native-update-hints:
+	@echo "🔍 Generating native image hints with GraalVM tracing agent..."
+	@echo ""
+	@echo "📋 Instructions:"
+	@echo "  1. The app will start in JVM mode with tracing enabled"
+	@echo "  2. Send a Telegram messages to make your bot use all features"
+	@echo "  3. Test any other app features"
+	@echo "  4. Press Ctrl+C when done"
+	@echo ""
+	@./gradlew generateNativeHints || true
+	@echo ""
+	@echo "✅ Hints generated/merged into:"
+	@echo "   src/main/resources/META-INF/native-image/com.aleksandrmakarov/tg-journals/"
+	@echo ""
+	@echo "📦 Next steps:"
+	@echo "   1. Review the generated JSON files (optional)"
+	@echo "   2. Rebuild Docker image: make docker-build"
+	@echo "   3. Test the native image: make docker-run"
+
 .PHONY: native-build
 native-build: ## Build GraalVM native image locally
 	@echo "Building GraalVM native image..."

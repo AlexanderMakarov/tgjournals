@@ -1,0 +1,12 @@
+{
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.compile.nullAnalysis.mode": "automatic",
+  "java.jdt.ls.lombokSupport.enabled": true,
+  "java.import.gradle.enabled": true,
+  "java.import.gradle.wrapper.enabled": true,
+  "java.import.gradle.offline.enabled": false,
+  "gradle.javaDebug": {
+    "tasks": ["bootRun"],
+    "clean": false
+  }
+}

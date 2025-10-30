@@ -53,7 +53,7 @@ WORKDIR /app
 ENV SPRING_PROFILES_ACTIVE=production
 ENV PORT=8080
 ENV FUNCTION_TARGET=com.aleksandrmakarov.journals.JournalsApplication
-ENV DATABASE_PATH=journals.db
+ENV DATABASE_PATH=/mnt/disk/journals.db
 
 # Set default Telegram bot configuration (should be overridden with actual values)
 ENV TELEGRAM_BOT_TOKEN=""
