@@ -100,12 +100,18 @@ public class BotCommandHandler {
       case "/promote":
         return handlePromoteCommand(user, messageText);
 
+      case "/ban":
+          return handleBanCommand(user, messageText);
+
+      case "/unban":
+          return handleUnbanCommand(user, messageText);
+
       case "/session":
         return handleSessionCommand(user, messageText);
 
       default:
         if (messageText != null && messageText.startsWith("/")) {
-          return "Unknown command. Use `/help` to see available commands.";
+          return "Unknown command. Use /help to see available commands.";
         }
         return handleTextInput(user, messageText);
     }
@@ -121,7 +127,9 @@ public class BotCommandHandler {
       help.append("/session - View/replace current session\n");
       help.append("/set_questions - Set current session questions\n");
       help.append("/participants - View all participants\n");
-      help.append("/promote - Promote a user to admin role\n\n");
+      help.append("/promote - Promote a user to admin role\n");
+      help.append("/ban - Ban a user, journals will stay\n");
+      help.append("/unban - Unban a user\n\n");
     }
 
     help.append("👤 <b>Player Commands:</b>\n");
@@ -129,7 +137,8 @@ public class BotCommandHandler {
     help.append("/after - Answer post-session questions\n");
     help.append("/last - View last journal\n");
     help.append("/last5 - View last 5 journals\n");
-    help.append("/last50 - View last 50 journals");
+    help.append("/last50 - View last 50 journals\n");
+    help.append("/admins - View list of admins");
 
     return help.toString();
   }
@@ -146,7 +155,7 @@ public class BotCommandHandler {
     if (parts.length == 1) {
       var activeSession = sessionService.getActiveSession();
       if (activeSession == null) {
-        return "No active session found. Use `/session <name>` to create a new session.";
+        return "No active session found. Use `/session {name}` to create a new session.";
       }
       SessionDisplayResult displayResult = buildSessionAndQuestionsDisplay(activeSession);
       return displayResult.displayText();
@@ -223,7 +232,7 @@ public class BotCommandHandler {
         + activeSession.name()
         + " (created: "
         + activeSession.createdAt().format(DATETIME_FORMATTER)
-        + ")\nPlease answer the following pre-session questions:\n❓ "
+        + ")\nPlease answer the following pre-session questions, send empty string to cancel the flow:\n❓ "
         + questions.get(0).text();
   }
 
@@ -265,7 +274,7 @@ public class BotCommandHandler {
         + activeSession.name()
         + " (created: "
         + activeSession.createdAt().format(DATETIME_FORMATTER)
-        + ")\nPlease answer the following post-session questions:\n❓ "
+        + ")\nPlease answer the following post-session questions, send empty string to cancel the flow:\n❓ "
         + currentQuestion.text();
   }
 
@@ -332,22 +341,22 @@ public class BotCommandHandler {
     requireAdmin(user);
 
     List<Participant> participants = userService.getParticipantsOrderedByLastJournal();
-    if (participants.isEmpty()) {
-      return "No participants found.";
-    }
-
     StringBuilder response = new StringBuilder("📋 <b>Participants:</b>\n");
+    boolean hasAny = false;
     for (Participant participant : participants) {
-      // Skip users with no sessions.
       if (participant.sessionCount() == 0) {
         continue;
       }
+      hasAny = true;
       response
           .append("👤 ")
           .append(participant.user().getDisplayName())
           .append(" - ")
           .append(participant.sessionCount())
           .append(" session(s)\n");
+    }
+    if (!hasAny) {
+      return "No participants found.";
     }
     return response.toString();
   }
@@ -360,12 +369,53 @@ public class BotCommandHandler {
       return "Use /promote @username to promote a user to admin role.";
     }
     String username = parts[1].trim();
+    if (username.startsWith("@")) {
+      username = username.substring(1);
+    }
     User targetUser = userService.findUserByUsername(username);
     if (targetUser == null) {
       return "User with username '" + username + "' not found.";
     }
-    userService.promoteToAdmin(targetUser);
+    userService.changeRole(targetUser, UserRole.ADMIN);
     return "User '" + targetUser.getDisplayName() + "' promoted to admin role.";
+  }
+
+  /** Handles the `/ban` command. Only for admins. Bans a user from the bot. */
+  private String handleBanCommand(User user, String messageText) {
+    requireAdmin(user);
+    String[] parts = messageText.split(" ", 2);
+    if (parts.length != 2) {
+      return "Use /ban @username to ban a user from the bot.";
+    }
+    String username = parts[1].trim();
+    if (username.startsWith("@")) {
+      username = username.substring(1);
+    }
+    User targetUser = userService.findUserByUsername(username);
+    if (targetUser == null) {
+      return "User with username '" + username + "' not found.";
+    }
+    userService.changeRole(targetUser, UserRole.BANNED);
+    return "User '" + targetUser.getDisplayName() + "' is banned.";
+  }
+
+  /** Handles the `/unban` command. Only for admins. Unbans a user from the bot. */
+  private String handleUnbanCommand(User user, String messageText) {
+    requireAdmin(user);
+    String[] parts = messageText.split(" ", 2);
+    if (parts.length != 2) {
+      return "Use /unban @username to unban a user from the bot.";
+    }
+    String username = parts[1].trim();
+    if (username.startsWith("@")) {
+      username = username.substring(1);
+    }
+    User targetUser = userService.findUserByUsername(username);
+    if (targetUser == null) {
+      return "User with username '" + username + "' not found.";
+    }
+    userService.changeRole(targetUser, UserRole.PLAYER);
+    return "User '" + targetUser.getDisplayName() + "' is unbanned.";
   }
 
   /**
@@ -374,7 +424,7 @@ public class BotCommandHandler {
    */
   private String handleTextInput(User user, String messageText) {
     if (user.stateType() == null) {
-      return "No state found. Use `/help` to see available commands.";
+      return "You are not in a state of handling direct input. Run some command first, use /help to see a list.";
     }
     switch (user.stateType()) {
       case QUESTIONS_UPDATE:
@@ -382,7 +432,7 @@ public class BotCommandHandler {
       case QA_FLOW:
         return handleQAFlow(user, messageText);
       default:
-        return "Unsupported command. Use `/help` to see available commands.";
+        return "Unsupported user state. Send empty string and use /help to start new command.";
     }
   }
 

@@ -49,6 +49,28 @@ public class WebhookController {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
     }
 
+    // Log update details.
+    StringBuilder details = new StringBuilder();
+    var message = update.getMessage();
+    if (message != null) {
+      details.append("messageId=").append(message.getMessageId()).append(", ");
+      var from = message.getFrom();
+      if (from != null) {
+        details.append("fromId=").append(from.getId()).append(", ");
+        details.append("fromUsername=").append(from.getUserName()).append(", ");
+        details.append("fromFirstName=").append(from.getFirstName()).append(", ");
+        details.append("fromLastName=").append(from.getLastName()).append(", ");
+      }
+      var chat = message.getChat();
+      if (chat != null) {
+        details.append("chatId=").append(chat.getId()).append(", ");
+      }
+      details.append("text=").append(message.getText()).append(", ");
+    } else {
+      details.append("no message");
+    }
+    logger.info("Processing update {}: {}", update.getUpdateId(), details.toString());
+
     try {
       // Process the webhook update through the bot
       BotApiMethod<?> response = bot.consumeUpdate(update);
@@ -56,6 +78,8 @@ public class WebhookController {
       if (response != null) {
         // Send the response to Telegram using the bot's API.
         bot.execute(response);
+      } else {
+        logger.warn("Null response generated for update id={}", update.getUpdateId());
       }
 
       // Always return OK to Telegram.

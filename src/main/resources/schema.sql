@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT,
     first_name TEXT,
     last_name TEXT,
-    role TEXT NOT NULL CHECK (role IN ('ADMIN', 'PLAYER')),
+    role TEXT NOT NULL CHECK (role IN ('ADMIN', 'PLAYER', 'BANNED')),
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     state_type TEXT CHECK (state_type IN ('QA_FLOW', 'SESSION_CREATE_PENDING', 'QUESTIONS_UPDATE')),
     state_session_id INTEGER,

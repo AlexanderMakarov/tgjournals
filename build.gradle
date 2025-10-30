@@ -4,6 +4,7 @@ plugins {
 	id 'com.diffplug.spotless' version '6.25.0'
 	id 'io.spring.dependency-management' version '1.1.6'
 	id 'org.graalvm.buildtools.native' version '0.10.1'
+	id 'jacoco'
 }
 
 group = 'com.aleksandrmakarov'
@@ -51,6 +52,7 @@ configurations.all {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	finalizedBy 'jacocoTestReport'
 }
 
 // Spotless configuration for code formatting
@@ -60,6 +62,47 @@ spotless {
 		removeUnusedImports()
 		trimTrailingWhitespace()
 		endWithNewline()
+	}
+}
+
+jacoco {
+	toolVersion = '0.8.13'
+}
+
+tasks.named('jacocoTestReport') {
+	dependsOn tasks.named('test')
+	reports {
+		xml.required = true
+		csv.required = false
+		html.required = true
+	}
+}
+tasks.register('printCoverage') {
+	dependsOn tasks.named('jacocoTestReport')
+	doLast {
+		def reportFile = file("build/reports/jacoco/test/jacocoTestReport.xml")
+		if (!reportFile.exists()) {
+			println "coverage: 0.00% of lines"
+			return
+		}
+        def text = reportFile.getText('UTF-8')
+	def pairs = (text =~ /<counter\b[^>]*type="LINE"[^>]*missed="(\d+)"[^>]*covered="(\d+)"[^>]*\/>/)
+	if (pairs.find()) {
+		pairs.reset()
+		def missedTotal = BigDecimal.ZERO
+		def coveredTotal = BigDecimal.ZERO
+		while (pairs.find()) {
+			missedTotal = missedTotal.add(new BigDecimal(pairs.group(1)))
+			coveredTotal = coveredTotal.add(new BigDecimal(pairs.group(2)))
+		}
+		def total = missedTotal.add(coveredTotal)
+		def percentBd = (total.compareTo(BigDecimal.ZERO) == 0)
+			? BigDecimal.ZERO
+			: coveredTotal.multiply(new BigDecimal('100')).divide(total, 2, java.math.RoundingMode.HALF_UP)
+		println String.format("coverage: %.2f%% of lines", percentBd.doubleValue())
+	} else {
+		println "coverage: 0.00% of lines"
+	}
 	}
 }
 

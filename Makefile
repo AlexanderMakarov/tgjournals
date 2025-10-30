@@ -15,7 +15,7 @@ test: ## Run tests
 
 .PHONY: test-coverage
 test-coverage: ## Run tests with coverage report
-	./gradlew test jacocoTestReport
+	./gradlew test jacocoTestReport printCoverage && xdg-open build/reports/jacoco/test/html/index.html >/dev/null 2>&1 || echo "Report: build/reports/jacoco/test/html/index.html"
 
 .PHONY: format
 format: ## Fix code formatting

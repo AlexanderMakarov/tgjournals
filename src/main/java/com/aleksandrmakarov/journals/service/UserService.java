@@ -18,7 +18,7 @@ public interface UserService {
 
   List<Participant> getParticipantsOrderedByLastJournal();
 
-  void promoteToAdmin(User user);
+  void changeRole(User user, UserRole newRole);
 
   User findOrCreateUserWithRole(
       Long telegramId, String username, String firstName, String lastName, UserRole role);

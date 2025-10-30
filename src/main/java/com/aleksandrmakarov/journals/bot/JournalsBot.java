@@ -1,5 +1,6 @@
 package com.aleksandrmakarov.journals.bot;
 
+import com.aleksandrmakarov.journals.model.UserRole;
 import com.aleksandrmakarov.journals.security.ForbiddenException;
 import com.aleksandrmakarov.journals.service.UserServiceImpl;
 import org.slf4j.Logger;
@@ -58,8 +59,8 @@ public class JournalsBot implements TelegramWebhookBot {
 
   @Override
   public BotApiMethod<?> consumeUpdate(Update update) {
-    logger.debug("Received webhook update: {}", update.getUpdateId());
 
+    // Check if the update has a message with text.
     if (update.hasMessage() && update.getMessage().getText() != null) {
       String messageText = update.getMessage().getText();
       Long chatId = update.getMessage().getChatId();
@@ -68,7 +69,7 @@ public class JournalsBot implements TelegramWebhookBot {
       String firstName = update.getMessage().getFrom().getFirstName();
       String lastName = update.getMessage().getFrom().getLastName();
 
-      // Register or update user
+      // Register or update user.
       var user = userService.findOrCreateUser(userId, username, firstName, lastName);
       var logPrefix =
           "Message from "
@@ -83,6 +84,13 @@ public class JournalsBot implements TelegramWebhookBot {
               + lastName
               + ")";
       logger.info("{} received: '{}'", logPrefix, messageText);
+
+      // Check user is not banned.
+      if (user.role() == UserRole.BANNED) {
+        logger.info("{} is banned, skipping command handling", logPrefix);
+        return createSendMessage(chatId, "You are banned from the bot. Please contact the admin to unban.");
+      }
+
       try {
         String response = commandHandler.handleCommand(messageText, user, update);
         logger.info("{} is answered: {}", logPrefix, response.replace("\n", "⏎"));
@@ -101,7 +109,11 @@ public class JournalsBot implements TelegramWebhookBot {
         return createSendMessage(chatId, "Sorry, an error occurred. Please try again.");
       }
     } else {
-      logger.debug("Received update without text message: {}", update);
+      logger.warn("Received update {} without text message. Update type: message={}, callbackQuery={}, editedMessage={}", 
+          update.getUpdateId(),
+          update.hasMessage(),
+          update.hasCallbackQuery(),
+          update.hasEditedMessage());
     }
     return null;
   }

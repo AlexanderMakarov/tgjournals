@@ -10,5 +10,10 @@ public enum UserRole {
   /**
    * Player role with standard user privileges. Can answer questions and view their own journals.
    */
-  PLAYER
+  PLAYER,
+
+  /**
+   * Banned user role. Can't use the bot.
+   */
+  BANNED
 }

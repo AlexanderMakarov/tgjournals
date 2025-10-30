@@ -78,7 +78,7 @@ public class UserServiceImpl implements UserService {
     return userRepository.findParticipantsOrderedByLastJournal();
   }
 
-  public void promoteToAdmin(User user) {
+  public void changeRole(User user, UserRole newRole) {
     if (user != null) {
       User updatedUser =
           new User(
@@ -87,7 +87,7 @@ public class UserServiceImpl implements UserService {
               user.username(),
               user.firstName(),
               user.lastName(),
-              UserRole.ADMIN,
+              newRole,
               user.createdAt(),
               user.stateType(),
               user.stateSessionId(),
