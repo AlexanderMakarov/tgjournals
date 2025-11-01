@@ -1,24 +1,10 @@
 package com.aleksandrmakarov.journals.integration;
 
-import static com.aleksandrmakarov.journals.bot.BotCommandHandler.QUESTIONS_UPDATE_EXPLANATION;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-
-import com.aleksandrmakarov.journals.model.Journal;
-import com.aleksandrmakarov.journals.model.Question;
-import com.aleksandrmakarov.journals.model.QuestionType;
-import com.aleksandrmakarov.journals.model.Session;
-import com.aleksandrmakarov.journals.model.User;
-import com.aleksandrmakarov.journals.model.UserRole;
-import com.aleksandrmakarov.journals.repository.SqliteJournalRepository;
-import com.aleksandrmakarov.journals.repository.SqliteQuestionRepository;
-import com.aleksandrmakarov.journals.repository.SqliteSessionRepository;
-import com.aleksandrmakarov.journals.repository.SqliteUserRepository;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,21 +16,41 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestConstructor;
 import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 
+import static com.aleksandrmakarov.journals.bot.BotCommandHandler.QUESTIONS_UPDATE_EXPLANATION;
+import com.aleksandrmakarov.journals.config.TestDatabaseInitializer;
+import com.aleksandrmakarov.journals.model.Journal;
+import com.aleksandrmakarov.journals.model.Question;
+import com.aleksandrmakarov.journals.model.QuestionType;
+import com.aleksandrmakarov.journals.model.Session;
+import com.aleksandrmakarov.journals.model.User;
+import com.aleksandrmakarov.journals.model.UserRole;
+import com.aleksandrmakarov.journals.repository.JournalRepository;
+import com.aleksandrmakarov.journals.repository.QuestionRepository;
+import com.aleksandrmakarov.journals.repository.SessionRepository;
+import com.aleksandrmakarov.journals.repository.UserRepository;
+
 /** Integration tests for the WebhookController. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
+@TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 public class WebhookIntegrationTest {
+
+  static {
+    // Ensure test database is created before Spring context loads
+    TestDatabaseInitializer.class.getName();
+  }
 
   @Autowired private TestRestTemplate restTemplate;
 
-  @Autowired private SqliteUserRepository userRepository;
-  @Autowired private SqliteSessionRepository sessionRepository;
-  @Autowired private SqliteQuestionRepository questionRepository;
-  @Autowired private SqliteJournalRepository journalRepository;
+  @Autowired private UserRepository userRepository;
+  @Autowired private SessionRepository sessionRepository;
+  @Autowired private QuestionRepository questionRepository;
+  @Autowired private JournalRepository journalRepository;
   @Autowired private TestJournalsBot testBot;
 
   // Test user record
@@ -54,14 +60,7 @@ public class WebhookIntegrationTest {
   private static final TestUser ADMIN = new TestUser(1001L, "admin_user", "Coach", "Smith");
   private static final TestUser PLAYER = new TestUser(2001L, "player_user", "Player", "Johnson");
 
-  static {
-    try {
-      Files.deleteIfExists(Path.of("test-journals.db"));
-      Files.deleteIfExists(Path.of("test-journals.db-wal"));
-      Files.deleteIfExists(Path.of("test-journals.db-shm"));
-    } catch (IOException ignored) {
-    }
-  }
+  // Test database is automatically created by TestDatabaseInitializer if it doesn't exist
 
   @BeforeEach
   void setUp() {
@@ -417,15 +416,15 @@ public class WebhookIntegrationTest {
     assertThat(response).contains("📝 <b>Current Session:</b>");
 
     // Step 3: Set questions.
-    response = sendWebhookRequestAndGetResponse(admin, "Before: B1 initial?\nAfter: A1 initial?");
+    sendWebhookRequestAndGetResponse(admin, "Before: B1 initial?\nAfter: A1 initial?");
 
-    // Step 2: Coach checks current questions
+    // Step 4: Coach checks current questions
     response = sendWebhookRequestAndGetResponse(admin, "/set_questions");
     assertThat(response).contains("📝 <b>Current Session:</b>\nName: Default Session\nCreated: ");
     assertThat(response)
         .contains("\n📋 <b>Questions:</b>\nBEFORE: B1 initial?\nAFTER: A1 initial?");
 
-    // Step 3: Coach updates questions
+    // Step 5: Coach updates questions
     response =
         sendWebhookRequestAndGetResponse(
             admin, "Before: B1 updated?\nAfter: A1 updated?\nAfter: A2 updated?");
@@ -433,7 +432,7 @@ public class WebhookIntegrationTest {
         .contains(
             "Questions updated successfully to:\nBEFORE: B1 updated?\nAFTER: A1 updated?\nAFTER: A2 updated?");
 
-    // Step 4: Coach verifies updated questions
+    // Step 6: Coach verifies updated questions
     response = sendWebhookRequestAndGetResponse(admin, "/set_questions");
     assertThat(response).contains("📝 <b>Current Session:</b>\nName: Default Session\nCreated: ");
     assertThat(response)

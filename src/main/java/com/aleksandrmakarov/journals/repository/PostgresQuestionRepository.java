@@ -8,11 +8,11 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class SqliteQuestionRepository implements QuestionRepository {
+public class PostgresQuestionRepository implements QuestionRepository {
 
   private final JdbcTemplate jdbcTemplate;
 
-  public SqliteQuestionRepository(JdbcTemplate jdbcTemplate) {
+  public PostgresQuestionRepository(JdbcTemplate jdbcTemplate) {
     this.jdbcTemplate = jdbcTemplate;
   }
 
@@ -42,13 +42,13 @@ public class SqliteQuestionRepository implements QuestionRepository {
   public Question save(Question question) {
     if (question.id() == null) {
       // Insert new question
-      jdbcTemplate.update(
-          "INSERT INTO questions (text, type, order_index, session_id) VALUES (?, ?, ?, ?)",
+      Long id = jdbcTemplate.queryForObject(
+          "INSERT INTO questions (text, type, order_index, session_id) VALUES (?, ?, ?, ?) RETURNING id",
+          Long.class,
           question.text(),
           question.type().name(),
           question.orderIndex(),
           question.sessionId());
-      Long id = jdbcTemplate.queryForObject("SELECT last_insert_rowid()", Long.class);
       return new Question(
           id, question.text(), question.type(), question.orderIndex(), question.sessionId());
     } else {

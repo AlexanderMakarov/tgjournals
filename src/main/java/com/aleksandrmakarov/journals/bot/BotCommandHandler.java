@@ -1,16 +1,25 @@
 package com.aleksandrmakarov.journals.bot;
 
-import com.aleksandrmakarov.journals.model.*;
-import com.aleksandrmakarov.journals.security.ForbiddenException;
-import com.aleksandrmakarov.journals.service.JournalServiceImpl;
-import com.aleksandrmakarov.journals.service.SqliteSessionImpl;
-import com.aleksandrmakarov.journals.service.UserServiceImpl;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.Update;
+
+import com.aleksandrmakarov.journals.model.JournalWithQuestion;
+import com.aleksandrmakarov.journals.model.Participant;
+import com.aleksandrmakarov.journals.model.Question;
+import com.aleksandrmakarov.journals.model.QuestionType;
+import com.aleksandrmakarov.journals.model.Session;
+import com.aleksandrmakarov.journals.model.SessionJournals;
+import com.aleksandrmakarov.journals.model.User;
+import com.aleksandrmakarov.journals.model.UserRole;
+import com.aleksandrmakarov.journals.security.ForbiddenException;
+import com.aleksandrmakarov.journals.service.JournalService;
+import com.aleksandrmakarov.journals.service.SessionService;
+import com.aleksandrmakarov.journals.service.UserService;
 
 /**
  * Handler for bot commands. Used HTML markup for formatting messages because "MarkdownV2"
@@ -23,11 +32,11 @@ public class BotCommandHandler {
   /** Record containing session display information and metadata. */
   public record SessionDisplayResult(String displayText, Session session, boolean hasQuestions) {}
 
-  @Autowired private UserServiceImpl userService;
+  @Autowired private UserService userService;
 
-  @Autowired private SqliteSessionImpl sessionService;
+  @Autowired private SessionService sessionService;
 
-  @Autowired private JournalServiceImpl journalService;
+  @Autowired private JournalService journalService;
 
   public static final DateTimeFormatter DATETIME_FORMATTER =
       DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

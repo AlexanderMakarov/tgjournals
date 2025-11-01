@@ -9,7 +9,7 @@ Journals are available to read for players themselves and admin (coach) could re
 
 ## Specs
 
-Java 17, Spring Boot 3.5.6, SQLite in WAL mode with foreign keys enabled, JdbcTemplate, LogBACK, OpenAPI (springdoc), telegram bot via webhook.
+Java 17, Spring Boot 3.5.6, PostgreSQL 18, JdbcTemplate, LogBACK, OpenAPI (springdoc), telegram bot via webhook.
 
 ## Features
 
@@ -39,13 +39,76 @@ After: What you would try to work on on next session?
    - Choose a username (must end with 'bot', e.g., "journals_soccer_bot")
 4. Save the **Bot Token** provided by BotFather
 5. Save the **Bot Username** (without @)
-6. Create `.env` file by copying [`.env.example`](/.env.example) and filling in the values:
+6. Create `.env` file by copying `.env.example` and filling in the values:
    ```bash
    cp .env.example .env
-   # Edit .env with your bot credentials and webhook secret
+   # Edit .env with your bot credentials, webhook secret, and database credentials
    ```
 
-## 2. Local Development Setup
+## 2. PostgreSQL Setup
+
+The application requires PostgreSQL to be installed and running.
+
+### Install and Start PostgreSQL
+
+**On Ubuntu/Debian:**
+```bash
+# Install PostgreSQL (if not already installed)
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+
+# Start PostgreSQL service
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+# Check if PostgreSQL is running
+sudo systemctl status postgresql
+```
+
+**On macOS:**
+```bash
+# Install via Homebrew
+brew install postgresql@18
+brew services start postgresql@18
+```
+
+### Create Database
+
+```bash
+# Create a user and database for the application
+sudo -u postgres psql
+
+# In PostgreSQL prompt, run:
+CREATE DATABASE journals;
+CREATE DATABASE test_journals;  # For tests
+
+# Or create user with password (optional):
+CREATE USER journals_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE journals TO journals_user;
+GRANT ALL PRIVILEGES ON DATABASE test_journals TO journals_user;
+
+# Exit PostgreSQL prompt
+\q
+```
+
+### Configure Database Connection
+
+The application uses the following defaults (can be overridden via environment variables):
+- **Host**: `localhost`
+- **Port**: `5432`
+- **Database**: `journals` (for tests: `test_journals`)
+- **Username**: `postgres`
+- **Password**: `postgres`
+
+You can override these in your `.env` file or as environment variables:
+```bash
+DB_USERNAME=journals_user
+DB_PASSWORD=your_password
+```
+
+**Note**: Tests automatically create the `test_journals` database if it doesn't exist. Just run `make test` and the database setup will be handled automatically.
+
+## 3. Local Development Setup
 
 ### Quick Start (Using Makefile)
 
@@ -88,7 +151,7 @@ make check-webhook
    NGROK_URL=https://abc123.ngrok.io make set-webhook
    ```
 
-## 3. Production Deployment
+## 4. Production Deployment
 
 For production, deploy your application to a server with a public domain and set the webhook on Telegram server side to avoid abusing by third parties.
 
@@ -123,11 +186,11 @@ To set webhook on Telegram server side, you need to generate a secret token and 
 make set-prod
 ```
 
-### Deployment to GCP Cloud Functions
+### Deployment to GCP Cloud Run v2
 
 TODO see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for more details.
 
-## 4. Webhook Management
+## 5. Webhook Management
 
 **Set Local Webhook** (for development with ngrok):
 ```bash
@@ -149,7 +212,7 @@ make check-webhook
 make delete-webhook
 ```
 
-## 5. Verify Setup
+## 6. Verify Setup
 
 1. Start the application: `make run`
 2. Check the health endpoint: `make health`
@@ -157,13 +220,13 @@ make delete-webhook
 4. Send `/start` to your bot in Telegram
 5. Check webhook status: `make check-webhook`
 
-## 6. Available Endpoints
+## 7. Available Endpoints
 
 - **Health Check**: `GET /health` - Returns database statistics with caching
 - **API Documentation**: `GET /docs` - Swagger UI
 - **Webhook**: `POST /webhook` - Telegram webhook endpoint
 
-## 7. Makefile Commands
+## 8. Makefile Commands
 
 The project includes a simplified Makefile for common development tasks:
 
@@ -186,9 +249,11 @@ make delete-webhook    # Delete webhook (stop receiving updates)
 
 ### Database Commands
 ```bash
-make db-reset          # Reset database (delete and recreate)
-make db-backup         # Backup database
-make db-restore        # Restore database from backup
+make db-setup         # Set up PostgreSQL databases (creates if they don't exist)
+make db-status        # Check PostgreSQL connection and database status
+make db-reset         # Reset database (drop and recreate, WARNING: deletes all data!)
+make db-backup        # Backup database to SQL file
+make db-restore       # Restore database from SQL backup file
 ```
 
 ### Health and Monitoring

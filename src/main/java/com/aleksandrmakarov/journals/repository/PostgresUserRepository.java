@@ -16,7 +16,7 @@ import org.springframework.stereotype.Repository;
 /** Repository for managing User entities in the database. */
 @Repository
 @RequiredArgsConstructor
-public class SqliteUserRepository implements UserRepository {
+public class PostgresUserRepository implements UserRepository {
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -123,8 +123,9 @@ public class SqliteUserRepository implements UserRepository {
   public User save(User user) {
     if (user.id() == null) {
       // Insert new user
-      jdbcTemplate.update(
-          "INSERT INTO users (telegram_id, username, first_name, last_name, role, created_at, state_question_index) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      Long id = jdbcTemplate.queryForObject(
+          "INSERT INTO users (telegram_id, username, first_name, last_name, role, created_at, state_question_index) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id",
+          Long.class,
           user.telegramId(),
           user.username(),
           user.firstName(),
@@ -132,7 +133,6 @@ public class SqliteUserRepository implements UserRepository {
           user.role().name(),
           TimestampUtils.toTimestamp(user.createdAt()),
           0);
-      Long id = jdbcTemplate.queryForObject("SELECT last_insert_rowid()", Long.class);
       return new User(
           id,
           user.telegramId(),

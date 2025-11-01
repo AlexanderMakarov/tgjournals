@@ -33,7 +33,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.telegram:telegrambots-webhook:7.0.0'
 	implementation 'org.telegram:telegrambots-client:7.0.0'
-	implementation 'org.xerial:sqlite-jdbc:3.45.0.0'
+	implementation 'org.postgresql:postgresql:42.7.7'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
 	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
@@ -53,6 +53,7 @@ configurations.all {
 tasks.named('test') {
 	useJUnitPlatform()
 	finalizedBy 'jacocoTestReport'
+	dependsOn = []
 }
 
 // Spotless configuration for code formatting
@@ -171,8 +172,8 @@ graalvmNative {
 			// YAML/SnakeYAML classes for Swagger/OpenAPI
 			buildArgs.add('--initialize-at-build-time=org.yaml.snakeyaml')
 
-			// SQLite classes
-			buildArgs.add('--initialize-at-build-time=org.sqlite')
+			// PostgreSQL classes
+			buildArgs.add('--initialize-at-build-time=org.postgresql')
 
 			// Spring Boot classes that need build-time initialization
 			buildArgs.add('--initialize-at-build-time=org.springframework.boot.json')
@@ -208,7 +209,7 @@ graalvmNative {
 			buildArgs.add('-H:+RemoveSaturatedTypeFlows')
 			buildArgs.add('-H:+IncludeAllLocales')
 
-			// Enable native access for JNI libraries like SQLite
+			// Enable native access for JNI libraries
 			if (System.getenv('STATIC_BUILD') == 'true') {
 				buildArgs.add('--enable-native-access=ALL-UNNAMED')
 			}

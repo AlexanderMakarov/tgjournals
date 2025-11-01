@@ -1,17 +1,10 @@
 # Google Cloud Functions Deployment Guide
 
-This guide will help you deploy your Telegram Journals Bot to Google Cloud Functions using GraalVM native compilation for optimal performance and minimal resource usage.
+This guide will help you deploy your Telegram Journals Bot to Google Cloud Run v2 using GraalVM native compilation to be fast and lightweight.
 
 ## Overview
 
-**Optimized Docker Image:**
-- **Size**: 287MB (down from 1.4GB - 80% reduction)
-- **Startup Time**: 0.376 seconds (vs 5-10s for JVM)
-- **Memory Usage**: ~50MB runtime (vs 200-500MB for JVM)
-- **Base Image**: debian:bookworm-slim with full SQLite support
-- **Volume Support**: Persistent disk mounting at `/mnt/disk`
-
-## Prerequisites
+## Prerequisites locally
 
 1. **Google Cloud SDK**: Install and configure
    ```bash
@@ -42,28 +35,17 @@ This guide will help you deploy your Telegram Journals Bot to Google Cloud Funct
    sudo apt install python3 python3-pip python3-venv
    ```
 
-## Setup
-
-1. **Copy environment template**:
+5. **.env**: Copy `.env.example` to `.env` and edit it with your values (see below).
    ```bash
-   cp env.template .env
-   ```
+   cp .env.example .env
 
-2. **Edit `.env` file** with your values:
-   ```bash
-   nano .env
-   ```
-   
-   Required values:
-   - `TELEGRAM_BOT_TOKEN`: Your bot token from @BotFather
-   - `TELEGRAM_WEBHOOK_SECRET`: A secure random string
-   - `GCP_PROJECT_ID`: Your Google Cloud project ID
-
-3. **Set up Pulumi environment**:
+6. **Set up Pulumi environment**:
    ```bash
    cd pulumi
+   # Optional starts.
    python3 -m venv venv
    source venv/bin/activate
+   # Optional ends.
    pip install -r requirements.txt
    pulumi stack init dev
    ```
@@ -127,31 +109,6 @@ make full-deploy
    make gcp-deploy
    ```
 
-## Performance Optimizations
-
-### GraalVM Native Image Benefits
-- **Startup time**: **0.376 seconds** (vs 5-10 seconds with standard JVM)
-- **Memory usage**: **~50MB** (vs 200-500MB with standard JVM)
-- **Image size**: **287MB** (vs 1.4GB unoptimized)
-- **Cold start**: Near-instant (critical for Cloud Functions)
-
-### Docker Image Optimizations
-- **Base image**: debian:bookworm-slim (~80MB base)
-- **Native executable**: GraalVM compiled binary
-- **Minimal dependencies**: Only ca-certificates and libz1
-- **SQLite support**: Full JNI compatibility
-- **Volume mounting**: Persistent storage at `/mnt/disk`
-
-### Google Cloud Functions Configuration
-- **Memory**: 1GB allocated (can be adjusted based on usage)
-- **Min instances**: 0 (cost-effective, pay only when used)
-- **Max instances**: 10 (adjustable based on traffic)
-- **Timeout**: 300 seconds (5 minutes)
-- **Persistent disk**: 1GB SSD for SQLite database
-- **Environment**:
-  - `DATABASE_PATH=/mnt/disk/journals.db` (auto-configured by Pulumi)
-  - Telegram bot credentials from `.env` file
-
 ## Monitoring and Logs
 
 1. **View logs**:
@@ -161,7 +118,7 @@ make full-deploy
 
 2. **Check function status**:
    ```bash
-   gcloud functions describe tg-journals-function --region=us-central1
+   gcloud run services describe tg-journals-function --region=<GCP_REGION>
    ```
 
 3. **Monitor metrics**:

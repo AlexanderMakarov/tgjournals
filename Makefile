@@ -10,7 +10,7 @@ run: ## Run the application
 	./gradlew bootRun
 
 .PHONY: test
-test: ## Run tests
+test: db-setup ## Run tests (ensures test database exists)
 	./gradlew test
 
 .PHONY: test-coverage
@@ -37,9 +37,17 @@ set-local: ## Start ngrok, set webhook automatically for local development
 			url=$$(echo "$$line" | grep -o 'https://[^[:space:]]*\.ngrok-free\.app'); \
 			echo "Found ngrok URL: $$url"; \
 			echo "Setting webhook to: $$url/webhook"; \
-			curl -s -X POST "https://api.telegram.org/bot$(TELEGRAM_BOT_TOKEN)/setWebhook" \
-				-H "Content-Type: application/json" \
-				-d "{\"url\": \"$$url/webhook\"}" > /dev/null; \
+			if [ -n "$(TELEGRAM_WEBHOOK_SECRET)" ]; then \
+				echo "Using webhook secret for security"; \
+				curl -s -X POST "https://api.telegram.org/bot$(TELEGRAM_BOT_TOKEN)/setWebhook" \
+					-H "Content-Type: application/json" \
+					-d "{\"url\": \"$$url/webhook\", \"secret_token\": \"$(TELEGRAM_WEBHOOK_SECRET)\"}" > /dev/null; \
+			else \
+				echo "No webhook secret configured (development mode)"; \
+				curl -s -X POST "https://api.telegram.org/bot$(TELEGRAM_BOT_TOKEN)/setWebhook" \
+					-H "Content-Type: application/json" \
+					-d "{\"url\": \"$$url/webhook\"}" > /dev/null; \
+			fi; \
 			echo "Webhook set successfully!"; \
 		fi; \
 	done
@@ -75,29 +83,74 @@ delete-webhook: ## Delete webhook (stop receiving updates)
 	@echo "Webhook deleted successfully!"
 
 # Database tasks
+.PHONY: db-setup
+db-setup: ## Set up PostgreSQL databases (creates databases if they don't exist)
+	@echo "Setting up PostgreSQL databases..."
+	@if ! systemctl is-active --quiet postgresql 2>/dev/null && ! pg_isready -q 2>/dev/null; then \
+		echo "❌ PostgreSQL is not running. Starting service..."; \
+		sudo systemctl start postgresql || (echo "Failed to start PostgreSQL. Please start it manually." && exit 1); \
+	fi
+	@echo "✅ PostgreSQL is running"
+	@echo "Creating databases if they don't exist..."
+	@PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'journals'" 2>/dev/null | grep -q 1 || \
+		PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d postgres -c "CREATE DATABASE journals;" 2>/dev/null || \
+		(echo "❌ Failed to create 'journals' database. Check DB_USERNAME and DB_PASSWORD in .env file." && exit 1)
+	@PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'test_journals'" 2>/dev/null | grep -q 1 || \
+		PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d postgres -c "CREATE DATABASE test_journals;" 2>/dev/null || \
+		(echo "❌ Failed to create 'test_journals' database. Check DB_USERNAME and DB_PASSWORD in .env file." && exit 1)
+	@echo "✅ Databases ready: journals, test_journals"
+
+.PHONY: db-status
+db-status: ## Check PostgreSQL connection and database status
+	@echo "Checking PostgreSQL status..."
+	@if pg_isready -q; then \
+		echo "✅ PostgreSQL is running"; \
+	else \
+		echo "❌ PostgreSQL is not running"; \
+		exit 1; \
+	fi
+	@echo ""
+	@echo "Database status:"
+	@PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d postgres -tc "SELECT datname FROM pg_database WHERE datname IN ('journals', 'test_journals');" 2>/dev/null | grep -E "(journals|test_journals)" || echo "  No databases found"
+
 .PHONY: db-reset
-db-reset: ## Reset database (delete and recreate)
-	@echo "Resetting database..."
-	@rm -f journals.db*
-	@echo "Database reset complete!"
+db-reset: ## Reset database (drop and recreate, WARNING: deletes all data!)
+	@echo "⚠️  WARNING: This will delete all data in the 'journals' database!"
+	@read -p "Are you sure? Type 'yes' to continue: " confirm; \
+	if [ "$$confirm" != "yes" ]; then \
+		echo "Cancelled."; \
+		exit 1; \
+	fi
+	@echo "Dropping and recreating database..."
+	@PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d postgres -c "DROP DATABASE IF EXISTS journals;" 2>/dev/null || true
+	@PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d postgres -c "CREATE DATABASE journals;" 2>/dev/null || \
+		(echo "Failed to recreate database. Check DB_USERNAME/DB_PASSWORD in .env file." && exit 1)
+	@echo "✅ Database reset complete! Tables will be created on next app start."
 
 .PHONY: db-backup
-db-backup: ## Backup database (commits WAL changes first)
+db-backup: ## Backup database to SQL file
 	@echo "Creating database backup..."
-	@echo "Committing WAL changes to main database..."
-	@sqlite3 journals.db "PRAGMA wal_checkpoint(FULL);"
-	@echo "Creating backup..."
-	@cp journals.db journals-$(shell date +%Y%m%d_%H%M%S).db
-	@echo "Database backed up!"
+	@backup_file="journals-$(shell date +%Y%m%d_%H%M%S).sql"; \
+	PGPASSWORD=$(DB_PASSWORD) pg_dump -h localhost -U $(DB_USERNAME) journals > "$$backup_file" 2>/dev/null || \
+		(echo "Failed to create backup. Check DB_USERNAME/DB_PASSWORD in .env file." && exit 1); \
+	echo "✅ Database backed up to: $$backup_file"
 
 .PHONY: db-restore
-db-restore: ## Restore database from backup
+db-restore: ## Restore database from SQL backup file
 	@echo "Available backups:"
-	@ls -la journals-*.db 2>/dev/null || echo "No backups found"
+	@ls -la journals-*.sql 2>/dev/null || echo "No backups found"
 	@read -p "Enter backup filename: " backup; \
 	if [ -f "$$backup" ]; then \
-		cp "$$backup" journals.db; \
-		echo "Database restored from $$backup"; \
+		echo "⚠️  WARNING: This will replace all data in the 'journals' database!"; \
+		read -p "Are you sure? Type 'yes' to continue: " confirm; \
+		if [ "$$confirm" != "yes" ]; then \
+			echo "Cancelled."; \
+			exit 1; \
+		fi; \
+		echo "Restoring from $$backup..."; \
+		PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d journals < "$$backup" 2>/dev/null || \
+			(echo "Failed to restore database. Check DB_USERNAME/DB_PASSWORD in .env file." && exit 1); \
+		echo "✅ Database restored from $$backup"; \
 	else \
 		echo "Error: Backup file not found"; \
 		exit 1; \
@@ -140,22 +193,33 @@ gcp-deploy: ## Deploy to Google Cloud Functions using Pulumi
 		echo "ERROR: GCP_PROJECT_ID not set in .env file"; \
 		exit 1; \
 	fi
-	@cd pulumi && pulumi up --yes
+	@mkdir -p .pulumi-state
+	@cd pulumi && pulumi login file://../.pulumi-state && (pulumi stack select dev || pulumi stack init dev) && pulumi config set gcp:project $(GCP_PROJECT_ID) --stack dev && pulumi config set gcp:region $(GCP_REGION) --stack dev && pulumi up --yes
 	@echo "✅ Deployment completed successfully!"
 
-.PHONY: gcp-logs
-gcp-logs: ## View Google Cloud Functions logs
-	@echo "Fetching Google Cloud Functions logs..."
+.PHONY: gcp-status
+gcp-status: ## View Google Cloud Run v2 status
+	@echo "Fetching Google Cloud Run v2 status..."
 	@if [ -z "$(GCP_PROJECT_ID)" ]; then \
 		echo "ERROR: GCP_PROJECT_ID not set in .env file"; \
 		exit 1; \
 	fi
-	@gcloud functions logs read tg-journals-function --project=$(GCP_PROJECT_ID) --limit=50
+	@gcloud run services describe tg-journals-function --project=$(GCP_PROJECT_ID) --region=$(GCP_REGION)
+
+.PHONY: gcp-logs
+gcp-logs: ## View Google Cloud Run v2 logs
+	@echo "Fetching Google Cloud Run v2 logs..."
+	@if [ -z "$(GCP_PROJECT_ID)" ]; then \
+		echo "ERROR: GCP_PROJECT_ID not set in .env file"; \
+		exit 1; \
+	fi
+	@gcloud run logs read tg-journals-function --project=$(GCP_PROJECT_ID) --limit=50
 
 .PHONY: gcp-delete
-gcp-delete: ## Delete Google Cloud Functions deployment
-	@echo "Deleting Google Cloud Functions deployment..."
-	@cd pulumi && pulumi destroy --yes
+gcp-delete: ## Delete Google Cloud resources.
+	@echo "Deleting Google Cloud Run v2 deployment..."
+	@mkdir -p .pulumi-state
+	@cd pulumi && pulumi login file://../.pulumi-state && (pulumi stack select dev || pulumi stack init dev) && pulumi destroy
 	@echo "✅ Deployment deleted successfully!"
 
 # Generate native image hints using GraalVM tracing agent.

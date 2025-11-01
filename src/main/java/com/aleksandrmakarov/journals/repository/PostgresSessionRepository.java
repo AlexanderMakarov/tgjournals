@@ -16,7 +16,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 @RequiredArgsConstructor
-public class SqliteSessionRepository implements SessionRepository {
+public class PostgresSessionRepository implements SessionRepository {
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -57,12 +57,12 @@ public class SqliteSessionRepository implements SessionRepository {
   public Session save(Session session) {
     if (session.id() == null) {
       // Insert new session
-      jdbcTemplate.update(
-          "INSERT INTO sessions (name, created_at, finished_at) VALUES (?, ?, ?)",
+      Long id = jdbcTemplate.queryForObject(
+          "INSERT INTO sessions (name, created_at, finished_at) VALUES (?, ?, ?) RETURNING id",
+          Long.class,
           session.name(),
           TimestampUtils.toTimestamp(session.createdAt()),
           session.finishedAt() != null ? TimestampUtils.toTimestamp(session.finishedAt()) : null);
-      Long id = jdbcTemplate.queryForObject("SELECT last_insert_rowid()", Long.class);
       return new Session(id, session.name(), session.createdAt(), session.finishedAt());
     } else {
       // Update existing session

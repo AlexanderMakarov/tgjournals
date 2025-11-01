@@ -280,13 +280,92 @@
       ]
     },
     {
-      "type": "com.aleksandrmakarov.journals.repository.JournalRepository"
+      "type": "com.aleksandrmakarov.journals.repository.JournalRepository",
+      "methods": [
+        {
+          "name": "count",
+          "parameterTypes": []
+        },
+        {
+          "name": "findLastNJournalsPerUser",
+          "parameterTypes": [
+            "java.lang.Long",
+            "int"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.aleksandrmakarov.journals.repository.PostgresJournalRepository",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.jdbc.core.JdbcTemplate"
+          ]
+        },
+        {
+          "name": "initRowMapper",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aleksandrmakarov.journals.repository.PostgresQuestionRepository",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.jdbc.core.JdbcTemplate"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.aleksandrmakarov.journals.repository.PostgresSessionRepository",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.jdbc.core.JdbcTemplate"
+          ]
+        },
+        {
+          "name": "initRowMapper",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aleksandrmakarov.journals.repository.PostgresUserRepository",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.jdbc.core.JdbcTemplate"
+          ]
+        },
+        {
+          "name": "initParticipantRowMapper",
+          "parameterTypes": []
+        },
+        {
+          "name": "initRowMapper",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "com.aleksandrmakarov.journals.repository.QuestionRepository"
     },
     {
-      "type": "com.aleksandrmakarov.journals.repository.SessionRepository"
+      "type": "com.aleksandrmakarov.journals.repository.SessionRepository",
+      "methods": [
+        {
+          "name": "count",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "com.aleksandrmakarov.journals.repository.SqliteJournalRepository",
@@ -426,7 +505,31 @@
       ]
     },
     {
-      "type": "com.aleksandrmakarov.journals.repository.UserRepository"
+      "type": "com.aleksandrmakarov.journals.repository.UserRepository",
+      "methods": [
+        {
+          "name": "count",
+          "parameterTypes": []
+        },
+        {
+          "name": "findAllByRole",
+          "parameterTypes": [
+            "com.aleksandrmakarov.journals.model.UserRole"
+          ]
+        },
+        {
+          "name": "findByTelegramId",
+          "parameterTypes": [
+            "java.lang.Long"
+          ]
+        },
+        {
+          "name": "save",
+          "parameterTypes": [
+            "com.aleksandrmakarov.journals.model.User"
+          ]
+        }
+      ]
     },
     {
       "type": "com.aleksandrmakarov.journals.security.WebhookSecurityService",
@@ -471,7 +574,36 @@
       ]
     },
     {
-      "type": "com.aleksandrmakarov.journals.service.SessionService"
+      "type": "com.aleksandrmakarov.journals.service.PostgresSessionImpl",
+      "fields": [
+        {
+          "name": "journalRepository"
+        },
+        {
+          "name": "questionRepository"
+        },
+        {
+          "name": "sessionRepository"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.aleksandrmakarov.journals.service.SessionService",
+      "methods": [
+        {
+          "name": "getJournalsForLastSessions",
+          "parameterTypes": [
+            "java.lang.Long",
+            "int"
+          ]
+        }
+      ]
     },
     {
       "type": "com.aleksandrmakarov.journals.service.SqliteSessionImpl",
@@ -516,7 +648,22 @@
       ]
     },
     {
-      "type": "com.aleksandrmakarov.journals.service.UserService"
+      "type": "com.aleksandrmakarov.journals.service.UserService",
+      "methods": [
+        {
+          "name": "findOrCreateUser",
+          "parameterTypes": [
+            "java.lang.Long",
+            "java.lang.String",
+            "java.lang.String",
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "getAdmins",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "com.aleksandrmakarov.journals.service.UserServiceImpl",
@@ -784,7 +931,61 @@
       ]
     },
     {
+      "type": "com.sun.crypto.provider.HmacCore$HmacSHA256",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "com.sun.crypto.provider.HmacCore$HmacSHA384",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA1",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA224",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA256",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA384",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.sun.crypto.provider.PBKDF2Core$HmacSHA512",
       "methods": [
         {
           "name": "<init>",
@@ -1238,10 +1439,30 @@
       "type": "java.lang.RuntimeException"
     },
     {
+      "type": "java.lang.SecurityManager",
+      "methods": [
+        {
+          "name": "checkPermission",
+          "parameterTypes": [
+            "java.security.Permission"
+          ]
+        }
+      ]
+    },
+    {
       "type": "java.lang.String"
     },
     {
       "type": "java.lang.String[]"
+    },
+    {
+      "type": "java.lang.System",
+      "methods": [
+        {
+          "name": "getSecurityManager",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "java.lang.Thread"
@@ -1361,6 +1582,17 @@
       "type": "java.nio.channels.SocketChannel"
     },
     {
+      "type": "java.security.AccessController",
+      "methods": [
+        {
+          "name": "doPrivileged",
+          "parameterTypes": [
+            "java.security.PrivilegedExceptionAction"
+          ]
+        }
+      ]
+    },
+    {
       "type": "java.security.AlgorithmParametersSpi"
     },
     {
@@ -1377,6 +1609,9 @@
     },
     {
       "type": "java.sql.DriverManager"
+    },
+    {
+      "type": "java.sql.SQLException"
     },
     {
       "type": "java.sql.Statement[]"
@@ -1960,6 +2195,21 @@
     },
     {
       "type": "org.neo4j.driver.Driver"
+    },
+    {
+      "type": "org.postgresql.Driver",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.postgresql.core.QueryExecutorCloseAction"
+    },
+    {
+      "type": "org.postgresql.jdbc.PgStatement"
     },
     {
       "type": "org.quartz.Scheduler"
@@ -2599,13 +2849,25 @@
       "type": "org.springframework.aop.SpringProxy"
     },
     {
-      "type": "org.springframework.aop.TargetClassAware"
+      "type": "org.springframework.aop.TargetClassAware",
+      "methods": [
+        {
+          "name": "getTargetClass",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.springframework.aop.framework.AbstractAdvisingBeanPostProcessor"
     },
     {
-      "type": "org.springframework.aop.framework.Advised"
+      "type": "org.springframework.aop.framework.Advised",
+      "methods": [
+        {
+          "name": "isFrozen",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.springframework.aop.framework.AopConfigException"
@@ -2735,7 +2997,15 @@
       "type": "org.springframework.beans.factory.support.NullBean"
     },
     {
-      "type": "org.springframework.boot.ApplicationProperties"
+      "type": "org.springframework.boot.ApplicationProperties",
+      "methods": [
+        {
+          "name": "setLazyInitialization",
+          "parameterTypes": [
+            "boolean"
+          ]
+        }
+      ]
     },
     {
       "type": "org.springframework.boot.Banner$Mode"
@@ -3115,7 +3385,27 @@
       ]
     },
     {
+      "type": "org.springframework.boot.autoconfigure.data.redis.RedisUrlSyntaxFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties"
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.diagnostics.analyzer.NoSuchBeanDefinitionFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.beans.factory.BeanFactory"
+          ]
+        }
+      ]
     },
     {
       "type": "org.springframework.boot.autoconfigure.flyway.FlywayMigrationInitializerDatabaseInitializerDetector",
@@ -3501,6 +3791,17 @@
       ]
     },
     {
+      "type": "org.springframework.boot.autoconfigure.jdbc.DataSourceBeanCreationFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.core.env.Environment"
+          ]
+        }
+      ]
+    },
+    {
       "type": "org.springframework.boot.autoconfigure.jdbc.DataSourceCheckpointRestoreConfiguration"
     },
     {
@@ -3555,7 +3856,19 @@
           ]
         },
         {
+          "name": "setPassword",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
           "name": "setUrl",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setUsername",
           "parameterTypes": [
             "java.lang.String"
           ]
@@ -3588,6 +3901,15 @@
             "javax.sql.DataSource",
             "org.springframework.beans.factory.ObjectProvider"
           ]
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.jdbc.HikariDriverConfigurationFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
         }
       ]
     },
@@ -3694,6 +4016,26 @@
       ]
     },
     {
+      "type": "org.springframework.boot.autoconfigure.jooq.JaxbNotAvailableExceptionFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.jooq.NoDslContextBeanFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.beans.factory.BeanFactory"
+          ]
+        }
+      ]
+    },
+    {
       "type": "org.springframework.boot.autoconfigure.jsonb.JsonbAutoConfiguration"
     },
     {
@@ -3716,6 +4058,44 @@
     },
     {
       "type": "org.springframework.boot.autoconfigure.quartz.SchedulerDependsOnDatabaseInitializationDetector",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.r2dbc.ConnectionFactoryBeanCreationFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.core.env.Environment"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.r2dbc.MissingR2dbcPoolDependencyFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.r2dbc.MultipleConnectionPoolConfigurationsFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.r2dbc.NoConnectionFactoryBeanFailureAnalyzer",
       "methods": [
         {
           "name": "<init>",
@@ -3802,6 +4182,15 @@
     },
     {
       "type": "org.springframework.boot.autoconfigure.sql.init.SqlR2dbcScriptDatabaseInitializer"
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.ssl.BundleContentNotWatchableFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.springframework.boot.autoconfigure.ssl.FileWatcher"
@@ -4079,6 +4468,15 @@
     },
     {
       "type": "org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration$EnableTransactionManagementConfiguration$CglibAutoProxyConfiguration",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration$EnableTransactionManagementConfiguration$JdkDynamicAutoProxyConfiguration",
       "methods": [
         {
           "name": "<init>",
@@ -5010,6 +5408,15 @@
       "type": "org.springframework.boot.context.config.ConfigDataNotFoundAction"
     },
     {
+      "type": "org.springframework.boot.context.config.ConfigDataNotFoundFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "org.springframework.boot.context.config.ConfigDataProperties"
     },
     {
@@ -5136,7 +5543,25 @@
       ]
     },
     {
+      "type": "org.springframework.boot.context.properties.IncompatibleConfigurationFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "org.springframework.boot.context.properties.NestedConfigurationProperty"
+    },
+    {
+      "type": "org.springframework.boot.context.properties.NotConstructorBoundInjectionFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.springframework.boot.context.properties.bind.BindResult"
@@ -5149,6 +5574,178 @@
     },
     {
       "type": "org.springframework.boot.convert.DurationUnit"
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.FailureAnalyzers",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.context.ConfigurableApplicationContext"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.LoggingFailureAnalysisReporter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.AotInitializerNotFoundFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.BeanCurrentlyInCreationFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.beans.factory.BeanFactory"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.BeanDefinitionOverrideFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.BeanNotOfRequiredTypeFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.BindFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.BindValidationFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.InvalidConfigurationPropertyNameFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.InvalidConfigurationPropertyValueFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.core.env.Environment"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.MissingParameterNamesFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.MutuallyExclusiveConfigurationPropertiesFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.core.env.Environment"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.NoSuchMethodFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.NoUniqueBeanDefinitionFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.springframework.beans.factory.BeanFactory"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.PatternParseFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.PortInUseFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.UnboundConfigurationPropertyFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.springframework.boot.diagnostics.analyzer.ValidationExceptionFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.springframework.boot.env.EnvironmentPostProcessorApplicationListener",
@@ -5301,6 +5898,9 @@
           "parameterTypes": []
         }
       ]
+    },
+    {
+      "type": "org.springframework.boot.liquibase.LiquibaseChangelogMissingFailureAnalyzer"
     },
     {
       "type": "org.springframework.boot.liquibase.LiquibaseDatabaseInitializerDetector",
@@ -5471,6 +6071,15 @@
       "type": "org.springframework.boot.web.client.RestClientCustomizer"
     },
     {
+      "type": "org.springframework.boot.web.context.MissingWebServerFactoryBeanFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "org.springframework.boot.web.context.ServerPortInfoApplicationContextInitializer",
       "methods": [
         {
@@ -5481,6 +6090,15 @@
     },
     {
       "type": "org.springframework.boot.web.embedded.tomcat.ConfigurableTomcatWebServerFactory"
+    },
+    {
+      "type": "org.springframework.boot.web.embedded.tomcat.ConnectorStartFailureAnalyzer",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory"
@@ -5817,6 +6435,9 @@
     },
     {
       "type": "org.springframework.context.support.PropertySourcesPlaceholderConfigurer"
+    },
+    {
+      "type": "org.springframework.core.DecoratingProxy"
     },
     {
       "type": "org.springframework.core.DefaultParameterNameDiscoverer"
@@ -7893,6 +8514,76 @@
     {
       "type": {
         "proxy": [
+          "com.aleksandrmakarov.journals.repository.JournalRepository",
+          "org.springframework.aop.SpringProxy",
+          "org.springframework.aop.framework.Advised",
+          "org.springframework.core.DecoratingProxy"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "com.aleksandrmakarov.journals.repository.QuestionRepository",
+          "org.springframework.aop.SpringProxy",
+          "org.springframework.aop.framework.Advised",
+          "org.springframework.core.DecoratingProxy"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "com.aleksandrmakarov.journals.repository.SessionRepository",
+          "org.springframework.aop.SpringProxy",
+          "org.springframework.aop.framework.Advised",
+          "org.springframework.core.DecoratingProxy"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "com.aleksandrmakarov.journals.repository.UserRepository",
+          "org.springframework.aop.SpringProxy",
+          "org.springframework.aop.framework.Advised",
+          "org.springframework.core.DecoratingProxy"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "com.aleksandrmakarov.journals.service.JournalService",
+          "org.springframework.aop.SpringProxy",
+          "org.springframework.aop.framework.Advised",
+          "org.springframework.core.DecoratingProxy"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "com.aleksandrmakarov.journals.service.SessionService",
+          "org.springframework.aop.SpringProxy",
+          "org.springframework.aop.framework.Advised",
+          "org.springframework.core.DecoratingProxy"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
+          "com.aleksandrmakarov.journals.service.UserService",
+          "org.springframework.aop.SpringProxy",
+          "org.springframework.aop.framework.Advised",
+          "org.springframework.core.DecoratingProxy"
+        ]
+      }
+    },
+    {
+      "type": {
+        "proxy": [
           "java.lang.reflect.GenericArrayType",
           "org.springframework.core.SerializableTypeWrapper$SerializableTypeProxy",
           "java.io.Serializable"
@@ -8110,6 +8801,18 @@
       "glob": "application-default.yml"
     },
     {
+      "glob": "application-production.properties"
+    },
+    {
+      "glob": "application-production.xml"
+    },
+    {
+      "glob": "application-production.yaml"
+    },
+    {
+      "glob": "application-production.yml"
+    },
+    {
       "glob": "application.properties"
     },
     {
@@ -8149,6 +8852,18 @@
       "glob": "com/aleksandrmakarov/journals/repository/JournalRepository.class"
     },
     {
+      "glob": "com/aleksandrmakarov/journals/repository/PostgresJournalRepository.class"
+    },
+    {
+      "glob": "com/aleksandrmakarov/journals/repository/PostgresQuestionRepository.class"
+    },
+    {
+      "glob": "com/aleksandrmakarov/journals/repository/PostgresSessionRepository.class"
+    },
+    {
+      "glob": "com/aleksandrmakarov/journals/repository/PostgresUserRepository.class"
+    },
+    {
       "glob": "com/aleksandrmakarov/journals/repository/QuestionRepository.class"
     },
     {
@@ -8182,6 +8897,9 @@
       "glob": "com/aleksandrmakarov/journals/service/JournalServiceImpl.class"
     },
     {
+      "glob": "com/aleksandrmakarov/journals/service/PostgresSessionImpl.class"
+    },
+    {
       "glob": "com/aleksandrmakarov/journals/service/SessionService.class"
     },
     {
@@ -8204,6 +8922,18 @@
     },
     {
       "glob": "config/application-default.yml"
+    },
+    {
+      "glob": "config/application-production.properties"
+    },
+    {
+      "glob": "config/application-production.xml"
+    },
+    {
+      "glob": "config/application-production.yaml"
+    },
+    {
+      "glob": "config/application-production.yml"
     },
     {
       "glob": "config/application.properties"
@@ -8414,6 +9144,9 @@
     },
     {
       "glob": "org/apache/tomcat/websocket/server/LocalStrings.properties"
+    },
+    {
+      "glob": "org/postgresql/driverconfig.properties"
     },
     {
       "glob": "org/springdoc/core/conditions/CacheOrGroupedOpenApiCondition$OnCacheDisabled.class"

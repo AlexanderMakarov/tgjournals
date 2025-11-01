@@ -1,8 +1,5 @@
 package com.aleksandrmakarov.journals.bot;
 
-import com.aleksandrmakarov.journals.model.UserRole;
-import com.aleksandrmakarov.journals.security.ForbiddenException;
-import com.aleksandrmakarov.journals.service.UserServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,12 +10,16 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.webhook.TelegramWebhookBot;
 
+import com.aleksandrmakarov.journals.model.UserRole;
+import com.aleksandrmakarov.journals.security.ForbiddenException;
+import com.aleksandrmakarov.journals.service.UserService;
+
 /** Telegram bot that handles commands and messages from users. */
 public class JournalsBot implements TelegramWebhookBot {
 
   private static final Logger logger = LoggerFactory.getLogger(JournalsBot.class);
 
-  @Autowired private UserServiceImpl userService;
+  @Autowired private UserService userService;
 
   @Autowired private BotCommandHandler commandHandler;
 

@@ -1,0 +1,4 @@
+encryptionsalt: v1:OXstJP2LN+8=:v1:r4XY0Xh+usbks5ac:/WnXMDa5U/hdbD50MKbmfZalD2ls8Q==
+config:
+  gcp:project: tgjournals
+  gcp:region: europe-west1

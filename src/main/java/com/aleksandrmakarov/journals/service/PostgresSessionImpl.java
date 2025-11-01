@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
-public class SqliteSessionImpl implements SessionService {
+public class PostgresSessionImpl implements SessionService {
 
   @Autowired private SessionRepository sessionRepository;
 

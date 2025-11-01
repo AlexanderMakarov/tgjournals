@@ -1,6 +1,6 @@
 # Pulumi Deployment for Telegram Journals Bot
 
-This directory contains the Pulumi configuration for deploying the Telegram Journals Bot to Google Cloud Functions with automatic Docker image building, pushing, and TLS certificate management.
+This directory contains the Pulumi configuration for deploying the Telegram Journals Bot to Google Cloud Run v2 with automatic Docker image building, pushing to Artifact Registry, and resource management.
 
 ## Prerequisites
 
@@ -39,11 +39,36 @@ This directory contains the Pulumi configuration for deploying the Telegram Jour
    pip install -r requirements.txt
    ```
 
-2. **Set up your `.env` file** in the project root with required variables (see .env.example)
+2. **Set up your GCP project** (see GCP_PROJECT_ID in .env.example)
 
-3. **Initialize Pulumi** (first time only):
+Create a new project or use an existing one:
    ```bash
-   pulumi stack init dev
+   gcloud projects create <project-id>
+   gcloud config set project <project-id>
+   ```
+Enable necessary APIs:
+   ```bash
+   gcloud services enable \
+      artifactregistry.googleapis.com \
+      run.googleapis.com \
+      iam.googleapis.com \
+      logging.googleapis.com \
+      monitoring.googleapis.com
+   ```
+Configure Docker to push images to Artifact Registry:
+   ```bash
+   # Replace <region> with your GCP region (e.g., europe-west1)
+   gcloud auth configure-docker <region>-docker.pkg.dev
+   ```
+Note: Artifact Registry is the recommended container registry for GCP. The old Google Container Registry (GCR) is deprecated.
+
+3. **Set up your `.env` file** in the project root with required variables (see .env.example)
+
+4. **Initialize Pulumi using local filesystem state** (first time only):
+   ```bash
+   mkdir -p ../.pulumi-state
+   pulumi login file://$(pwd)/../.pulumi-state
+   pulumi stack init dev || true
    ```
 
 ## Deployment
@@ -56,6 +81,8 @@ This directory contains the Pulumi configuration for deploying the Telegram Jour
 
 2. **Deploy the infrastructure** (uses your local Docker image):
    ```bash
+   mkdir -p ../.pulumi-state
+   pulumi login file://$(pwd)/../.pulumi-state
    pulumi up
    ```
 
@@ -66,35 +93,55 @@ This directory contains the Pulumi configuration for deploying the Telegram Jour
 
 ## What Pulumi Manages
 
-- **Docker Image**: Pushes your locally built image to Google Container Registry
-- **Google Cloud Function**: 2nd generation with persistent disk
-- **Service Account**: With minimal required permissions
-- **Persistent Disk**: 1GB for database storage (cost optimized)
-- **IAM Bindings**: For public access
+- **Artifact Registry Repository**: Docker repository for storing container images
+- **Docker Image**: Pushes your locally built image to Artifact Registry
+- **Cloud Run v2 Service**: Serverless container service with minimal resource usage
+- **Service Account**: With minimal required permissions (logging, monitoring)
+- **IAM Bindings**: For public access to the Cloud Run service
 - **HTTPS**: Provided by default (no additional cost)
+
+When you destroy the stack with `pulumi destroy`, all resources including the Artifact Registry repository and its images are removed.
 
 ## Environment Variables Required
 
 Make sure your `.env` file contains:
 - `GCP_PROJECT_ID`: Your Google Cloud project ID
-- `GCP_REGION`: Google Cloud region (default: us-central1)
-- `FUNCTION_NAME`: Cloud Function name (default: tg-journals-function)
+- `GCP_REGION`: Google Cloud region (default: europe-west1)
+- `FUNCTION_NAME`: Cloud Run service name (default: tg-journals-function)
 - `TELEGRAM_BOT_TOKEN`: Your Telegram bot token
 - `TELEGRAM_WEBHOOK_SECRET`: Webhook secret for security
+- `SUPABASE_DATABASE_URL`: Your Supabase database connection URL (if using Supabase)
 
 ## Resources Created
 
-- **Google Cloud Function** (2nd gen) with GraalVM native image
-- **Docker Image** automatically built and pushed to GCR
-- **SSL Certificate** (free managed certificate)
-- **Global Load Balancer** with HTTPS proxy
-- **Service Account** with minimal permissions
-- **Persistent Disk** for database storage
-- **IAM Bindings** for public access
+- **Artifact Registry Repository** (`tg-journals`) for Docker images
+- **Cloud Run v2 Service** with GraalVM native image
+- **Docker Image** automatically built and pushed to Artifact Registry
+- **Service Account** with minimal permissions (logging, monitoring)
+- **IAM Bindings** for public access to Cloud Run service
+
+### Resource Specifications
+
+- **Memory**: 256Mi (optimized for GraalVM native images)
+- **CPU**: 1 vCPU
+- **Scaling**: Min 0 instances, Max 1 instance (scales to zero when idle)
+- **Request Timeout**: 60 seconds
+- **Startup Time**: ~0.4 seconds (GraalVM native image)
+
+All resources are automatically cleaned up when you run `pulumi destroy`, including the Artifact Registry repository and all Docker images stored in it.
 
 ## Cleanup
 
-To destroy all resources:
+To destroy all resources (including Artifact Registry repository and images):
 ```bash
+mkdir -p ../.pulumi-state
+pulumi login file://$(pwd)/../.pulumi-state
 pulumi destroy
 ```
+
+This will remove:
+- Cloud Run v2 service
+- Artifact Registry repository and all Docker images
+- Service account and IAM bindings
+
+**Note**: All infrastructure is managed by Pulumi, so `pulumi destroy` will clean up everything, including the container registry and stored images.

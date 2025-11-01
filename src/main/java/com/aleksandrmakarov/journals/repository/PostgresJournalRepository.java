@@ -16,7 +16,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class SqliteJournalRepository implements JournalRepository {
+public class PostgresJournalRepository implements JournalRepository {
 
   private final JdbcTemplate jdbcTemplate;
 
@@ -39,14 +39,14 @@ public class SqliteJournalRepository implements JournalRepository {
   public Journal save(Journal journal) {
     if (journal.id() == null) {
       // Insert new journal
-      jdbcTemplate.update(
-          "INSERT INTO journals (answer, created_at, user_id, session_id, question_id) VALUES (?, ?, ?, ?, ?)",
+      Long id = jdbcTemplate.queryForObject(
+          "INSERT INTO journals (answer, created_at, user_id, session_id, question_id) VALUES (?, ?, ?, ?, ?) RETURNING id",
+          Long.class,
           journal.answer(),
           TimestampUtils.toTimestamp(journal.createdAt()),
           journal.userId(),
           journal.sessionId(),
           journal.questionId());
-      Long id = jdbcTemplate.queryForObject("SELECT last_insert_rowid()", Long.class);
       return new Journal(
           id,
           journal.answer(),
@@ -120,7 +120,7 @@ public class SqliteJournalRepository implements JournalRepository {
   }
 
   public List<SessionJournals> findLastNJournalsPerUser(Long userId, int limitLastSessions) {
-    // SQLite-compatible query: pick `limitLastSessions` latest sessions by MAX(created_at),
+    // PostgreSQL query: pick `limitLastSessions` latest sessions by MAX(created_at),
     // then list journals within them.
     String sql =
         """
