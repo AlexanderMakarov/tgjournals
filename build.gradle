@@ -50,10 +50,16 @@ configurations.all {
 	exclude group: 'commons-logging', module: 'commons-logging'
 }
 
+// Add coverage report to test task.
 tasks.named('test') {
 	useJUnitPlatform()
 	finalizedBy 'jacocoTestReport'
 	dependsOn = []
+}
+
+// Prevent bootRun task from being up-to-date ever.
+tasks.named('bootRun') {
+	outputs.upToDateWhen { false }
 }
 
 // Spotless configuration for code formatting
@@ -66,10 +72,10 @@ spotless {
 	}
 }
 
+// Setup Jacoco coverage report.
 jacoco {
 	toolVersion = '0.8.13'
 }
-
 tasks.named('jacocoTestReport') {
 	dependsOn tasks.named('test')
 	reports {
@@ -86,24 +92,24 @@ tasks.register('printCoverage') {
 			println "coverage: 0.00% of lines"
 			return
 		}
-        def text = reportFile.getText('UTF-8')
-	def pairs = (text =~ /<counter\b[^>]*type="LINE"[^>]*missed="(\d+)"[^>]*covered="(\d+)"[^>]*\/>/)
-	if (pairs.find()) {
-		pairs.reset()
-		def missedTotal = BigDecimal.ZERO
-		def coveredTotal = BigDecimal.ZERO
-		while (pairs.find()) {
-			missedTotal = missedTotal.add(new BigDecimal(pairs.group(1)))
-			coveredTotal = coveredTotal.add(new BigDecimal(pairs.group(2)))
+		def text = reportFile.getText('UTF-8')
+		def pairs = (text =~ /<counter\b[^>]*type="LINE"[^>]*missed="(\d+)"[^>]*covered="(\d+)"[^>]*\/>/)
+		if (pairs.find()) {
+			pairs.reset()
+			def missedTotal = BigDecimal.ZERO
+			def coveredTotal = BigDecimal.ZERO
+			while (pairs.find()) {
+				missedTotal = missedTotal.add(new BigDecimal(pairs.group(1)))
+				coveredTotal = coveredTotal.add(new BigDecimal(pairs.group(2)))
+			}
+			def total = missedTotal.add(coveredTotal)
+			def percentBd = (total.compareTo(BigDecimal.ZERO) == 0)
+				? BigDecimal.ZERO
+				: coveredTotal.multiply(new BigDecimal('100')).divide(total, 2, java.math.RoundingMode.HALF_UP)
+			println String.format("coverage: %.2f%% of lines", percentBd.doubleValue())
+		} else {
+			println "coverage: 0.00% of lines"
 		}
-		def total = missedTotal.add(coveredTotal)
-		def percentBd = (total.compareTo(BigDecimal.ZERO) == 0)
-			? BigDecimal.ZERO
-			: coveredTotal.multiply(new BigDecimal('100')).divide(total, 2, java.math.RoundingMode.HALF_UP)
-		println String.format("coverage: %.2f%% of lines", percentBd.doubleValue())
-	} else {
-		println "coverage: 0.00% of lines"
-	}
 	}
 }
 

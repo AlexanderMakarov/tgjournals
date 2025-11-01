@@ -40,3 +40,5 @@ logs.log
 journals.db*
 test-journals.db*
 .pulumi-state/
+pulumi/venv/
+**/*.pyc

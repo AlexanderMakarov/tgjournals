@@ -6,14 +6,36 @@ from dotenv import load_dotenv
 from pathlib import Path
 
 # Load environment variables from .env file
-load_dotenv("../.env")
+# Use interpolate=False to prevent variable expansion, override=True to overwrite Make-expanded values
+# NOTE: Make's include .env expands $ variables, so we need override=True to get correct values from file
+load_dotenv("../.env", interpolate=False, override=True)
 
 # Get configuration
 config = pulumi.Config()
 project_id = os.getenv("GCP_PROJECT_ID")
 region = os.getenv("GCP_REGION", "europe-west1")  # Belgium - cheapest European region
 function_name = os.getenv("FUNCTION_NAME", "tg-journals-function")
-database_url = os.getenv("SUPABASE_DATABASE_URL", "")
+# Get database configuration for production (Cloud Run)
+# Use DB_PROD_* variables only (production deployment)
+db_host = os.getenv("DB_PROD_HOST", "not_set_in_env")
+db_port = os.getenv("DB_PROD_PORT", "not_set_in_env")
+db_name = os.getenv("DB_PROD_NAME", "not_set_in_env")
+db_username = os.getenv("DB_PROD_USERNAME", "not_set_in_env").strip("'")
+# Strip quotes from password if present (use single quotes in .env file to prevent $ expansion)
+# Single quotes in .env file will be included in os.getenv() value, so we strip them
+db_password = os.getenv("DB_PROD_PASSWORD", "").strip("'")
+if not db_password:
+    raise ValueError("DB_PROD_PASSWORD must be set in .env file for production deployment")
+# For Supabase, add SSL parameters - strip quotes if present
+db_ssl_params_raw = os.getenv("DB_PROD_SSL_PARAMS")
+# Remove surrounding quotes from both ends (handles both double and single quotes)
+# Also strip any whitespace and ensure it starts with ?
+if db_ssl_params_raw:
+    db_ssl_params = db_ssl_params_raw.strip().strip("'")
+    # Ensure it starts with ? if it doesn't already
+    if not db_ssl_params.startswith('?'):
+        db_ssl_params = '?' + db_ssl_params
+
 supabase_ca_path = Path("supabase_prod-ca-2021.crt")
 supabase_ca_content = ""
 if supabase_ca_path.exists():
@@ -22,6 +44,9 @@ if supabase_ca_path.exists():
 # Validate required environment variables
 if not project_id:
     raise ValueError("GCP_PROJECT_ID must be set in .env file")
+if not db_host or not db_password:
+    raise ValueError("DB_PROD_HOST and DB_PROD_PASSWORD must be set in .env file for production deployment")
+print(f"GCP_PROJECT_ID: {project_id}, GCP_REGION: {region}, FUNCTION_NAME: {function_name}, DB_HOST: {db_host}, DB_PORT: {db_port}, DB_NAME: {db_name}, DB_USERNAME: {db_username}, len(DB_PASSWORD): {len(db_password)}, DB_SSL_PARAMS: {db_ssl_params}")
 
 # Create Artifact Registry repository for Docker images
 artifact_registry_repo = gcp.artifactregistry.Repository(
@@ -109,12 +134,17 @@ run_service = gcp.cloudrunv2.Service(
                     gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(name="TELEGRAM_BOT_TOKEN", value=os.getenv("TELEGRAM_BOT_TOKEN", "")),
                     gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(name="TELEGRAM_WEBHOOK_SECRET", value=os.getenv("TELEGRAM_WEBHOOK_SECRET", "")),
                     gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(name="SPRING_PROFILES_ACTIVE", value="production"),
-                    gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(name="DATABASE_URL", value=database_url),
+                    gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(name="DB_HOST", value=db_host),
+                    gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(name="DB_PORT", value=db_port),
+                    gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(name="DB_NAME", value=db_name),
+                    gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(name="DB_USERNAME", value=db_username),
+                    gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(name="DB_PASSWORD", value=db_password),
+                    gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(name="DB_SSL_PARAMS", value=db_ssl_params),
                     gcp.cloudrunv2.ServiceTemplateContainerEnvArgs(name="SUPABASE_CA_CERT", value=supabase_ca_content),
                 ],
                 resources=gcp.cloudrunv2.ServiceTemplateContainerResourcesArgs(
                     limits={
-                        "memory": "256Mi",
+                        "memory": "512Mi", # 512Mi is the minimum required for Cloud Run v2 with CPU allocation.
                         "cpu": "1"
                     }
                 )

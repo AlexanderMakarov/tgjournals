@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     state_type TEXT CHECK (state_type IN ('QA_FLOW', 'SESSION_CREATE_PENDING', 'QUESTIONS_UPDATE')),
     state_session_id BIGINT,
-    state_question_index INTEGER NOT NULL,
+    state_question_index INTEGER NOT NULL DEFAULT 0,
     state_updated_at TIMESTAMP
 );
 

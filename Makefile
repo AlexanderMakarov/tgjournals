@@ -6,8 +6,42 @@ export
 
 # Development tasks
 .PHONY: run
-run: ## Run the application
+run: ## Run the application (with local database)
 	./gradlew bootRun
+
+.PHONY: run-prod
+run-prod: ## Run the application with production database (uses DB_PROD_* variables)
+	@echo "Running application with production database..."
+	@if [ -z "$(DB_PROD_HOST)" ]; then \
+		echo "❌ Error: DB_PROD_HOST not set in .env file"; \
+		exit 1; \
+	fi; \
+	PROD_HOST=$$DB_PROD_HOST; \
+	PROD_PORT=$$DB_PROD_PORT; \
+	PROD_NAME=$$DB_PROD_NAME; \
+	PROD_PASS=$$(grep '^DB_PROD_PASSWORD=' .env | cut -d= -f2- | sed "s/^'\(.*\)'$$/\\1/" | sed 's/^"\(.*\)"$$/\1/'); \
+	PROD_USER=$$DB_PROD_USERNAME; \
+	PROD_USER=$$(echo "$$PROD_USER" | sed "s/^'\(.*\)'$$/\\1/" | sed 's/^"\(.*\)"$$/\1/'); \
+	PROD_SSL=$$DB_PROD_SSL_PARAMS; \
+	PROD_SSL=$$(echo "$$PROD_SSL" | sed "s/^'\(.*\)'$$/\\1/" | sed 's/^"\(.*\)"$$/\1/'); \
+	# Strip surrounding quotes if present \
+	PROD_HOST=$$(echo "$$PROD_HOST" | sed 's/^"\(.*\)"$$/\1/'); \
+	PROD_PORT=$$(echo "$$PROD_PORT" | sed 's/^"\(.*\)"$$/\1/'); \
+	PROD_NAME=$$(echo "$$PROD_NAME" | sed 's/^"\(.*\)"$$/\1/'); \
+	if [ -z "$$PROD_HOST" ] || [ -z "$$PROD_PORT" ] || [ -z "$$PROD_NAME" ] || [ -z "$$PROD_USER" ] || [ -z "$$PROD_PASS" ]; then \
+		echo "❌ Error: Missing required production database configuration"; \
+		echo "Required: DB_PROD_HOST, DB_PROD_PORT, DB_PROD_NAME, DB_PROD_USERNAME, DB_PROD_PASSWORD"; \
+		exit 1; \
+	fi; \
+	echo ""; \
+	echo "Password length: $$(echo -n "$$PROD_PASS" | wc -c)"; \
+	echo ""; \
+	PROD_PASS_ESC=$$(echo "$$PROD_PASS" | sed "s/'/'\"'\"'/g"); \
+	CMD="export DB_HOST=\"$$PROD_HOST\" && export DB_PORT=\"$$PROD_PORT\" && export DB_NAME=\"$$PROD_NAME\" && export DB_USERNAME=\"$$PROD_USER\" && export DB_PASSWORD='$$PROD_PASS_ESC' && export DB_SSL_PARAMS=\"$$PROD_SSL\" && export SPRING_PROFILES_ACTIVE=production && ./gradlew bootRun"; \
+	echo "Command to execute:"; \
+	echo "$$CMD" | sed "s/DB_PASSWORD='[^']*'/DB_PASSWORD='<hidden>'/"; \
+	echo ""; \
+	eval "$$CMD"
 
 .PHONY: test
 test: db-setup ## Run tests (ensures test database exists)
@@ -101,7 +135,7 @@ db-setup: ## Set up PostgreSQL databases (creates databases if they don't exist)
 	@echo "✅ Databases ready: journals, test_journals"
 
 .PHONY: db-status
-db-status: ## Check PostgreSQL connection and database status
+db-status: ## Check PostgreSQL connection and database status (local)
 	@echo "Checking PostgreSQL status..."
 	@if pg_isready -q; then \
 		echo "✅ PostgreSQL is running"; \
@@ -112,6 +146,63 @@ db-status: ## Check PostgreSQL connection and database status
 	@echo ""
 	@echo "Database status:"
 	@PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d postgres -tc "SELECT datname FROM pg_database WHERE datname IN ('journals', 'test_journals');" 2>/dev/null | grep -E "(journals|test_journals)" || echo "  No databases found"
+
+.PHONY: db-test-prod
+db-test-prod: ## Test connection to production database (uses DB_PROD_* variables only)
+	@echo "Testing production database connection..."
+	@if [ -z "$(DB_PROD_HOST)" ]; then \
+		echo "❌ Error: DB_PROD_HOST not set in .env file"; \
+		exit 1; \
+	fi
+	@PROD_HOST=$$DB_PROD_HOST; \
+	PROD_PORT=$$DB_PROD_PORT; \
+	PROD_NAME=$$DB_PROD_NAME; \
+	PROD_USER=$$DB_PROD_USERNAME; \
+	# Strip surrounding quotes if present \
+	PROD_HOST=$$(echo "$$PROD_HOST" | sed 's/^"\(.*\)"$$/\1/'); \
+	PROD_PORT=$$(echo "$$PROD_PORT" | sed 's/^"\(.*\)"$$/\1/'); \
+	PROD_NAME=$$(echo "$$PROD_NAME" | sed 's/^"\(.*\)"$$/\1/'); \
+	PROD_USER=$$(echo "$$PROD_USER" | sed 's/^"\(.*\)"$$/\1/' | sed "s/^'\(.*\)'$$/\\1/"); \
+	# Read password directly from .env file to avoid $ expansion (use single quotes in .env) \
+	PROD_PASS=$$(grep '^DB_PROD_PASSWORD=' .env | cut -d= -f2- | sed "s/^'\(.*\)'$$/\\1/" | sed 's/^"\(.*\)"$$/\1/'); \
+	if [ -z "$$PROD_HOST" ] || [ -z "$$PROD_PORT" ] || [ -z "$$PROD_NAME" ] || [ -z "$$PROD_USER" ] || [ -z "$$PROD_PASS" ]; then \
+		echo "❌ Error: Missing required production database configuration in .env file"; \
+		echo "Required: DB_PROD_HOST, DB_PROD_PORT, DB_PROD_NAME, DB_PROD_USERNAME, DB_PROD_PASSWORD"; \
+		exit 1; \
+	fi; \
+	# Clear any existing password files/environment \
+	unset PGPASSFILE PGSSLMODE; \
+	# Show the exact command being executed (without password) \
+	echo ""; \
+	echo "Executing: PGPASSWORD=<hidden> PGSSLMODE=require psql -h \"$$PROD_HOST\" -p \"$$PROD_PORT\" -d \"$$PROD_NAME\" -U \"$$PROD_USER\" -c \"SELECT version();\""; \
+	echo ""; \
+	# Pass password inline to avoid eval issues with special characters \
+	if output=$$(PGSSLMODE=require PGPASSWORD=$$(printf '%s' "$$PROD_PASS") psql -h "$$PROD_HOST" -p "$$PROD_PORT" -d "$$PROD_NAME" -U "$$PROD_USER" -c "SELECT version();" 2>&1); then \
+		echo "✅ Connection successful!"; \
+		echo "Database version: $$output"; \
+		echo "Tables in 'public' schema:"; \
+		PGSSLMODE=require PGPASSWORD=$$(printf '%s' "$$PROD_PASS") psql -h "$$PROD_HOST" -p "$$PROD_PORT" -d "$$PROD_NAME" -U "$$PROD_USER" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;" || true; \
+	else \
+		exit_code=$$?; \
+		echo "❌ Connection failed (exit code: $$exit_code)!"; \
+		echo ""; \
+		echo "Debug information:"; \
+		echo "  Host: $$PROD_HOST"; \
+		echo "  Port: $$PROD_PORT"; \
+		echo "  Database: $$PROD_NAME"; \
+		echo "  Username: $$PROD_USER"; \
+		echo "  Password length: $$(echo -n "$$PROD_PASS" | wc -c)"; \
+		echo ""; \
+		echo "Error output:"; \
+		echo "$$output"; \
+		echo ""; \
+		echo "Note: Supabase requires SSL connections (PGSSLMODE=require is set)."; \
+		if echo "$$output" | grep -q "password authentication failed"; then \
+			echo "⚠️  Authentication failed - check your DB_PROD_USERNAME and DB_PROD_PASSWORD"; \
+			echo "Note: For Supabase pooler, username format should be: postgres.PROJECT_REF"; \
+		fi; \
+		exit 1; \
+	fi
 
 .PHONY: db-reset
 db-reset: ## Reset database (drop and recreate, WARNING: deletes all data!)
@@ -194,7 +285,8 @@ gcp-deploy: ## Deploy to Google Cloud Functions using Pulumi
 		exit 1; \
 	fi
 	@mkdir -p .pulumi-state
-	@cd pulumi && pulumi login file://../.pulumi-state && (pulumi stack select dev || pulumi stack init dev) && pulumi config set gcp:project $(GCP_PROJECT_ID) --stack dev && pulumi config set gcp:region $(GCP_REGION) --stack dev && pulumi up --yes
+	# Use local filesystem state for Pulumi. OK for one developer.
+	@cd pulumi && if [ -d "venv" ]; then . venv/bin/activate; fi && pulumi login file://../.pulumi-state && (pulumi stack select dev || pulumi stack init dev) && pulumi config set gcp:project $(GCP_PROJECT_ID) --stack dev && pulumi config set gcp:region $(GCP_REGION) --stack dev && pulumi up --yes
 	@echo "✅ Deployment completed successfully!"
 
 .PHONY: gcp-status
@@ -213,13 +305,13 @@ gcp-logs: ## View Google Cloud Run v2 logs
 		echo "ERROR: GCP_PROJECT_ID not set in .env file"; \
 		exit 1; \
 	fi
-	@gcloud run logs read tg-journals-function --project=$(GCP_PROJECT_ID) --limit=50
+	@gcloud run services logs read $(FUNCTION_NAME) --region=$(GCP_REGION) --project=$(GCP_PROJECT_ID) --limit=50
 
 .PHONY: gcp-delete
 gcp-delete: ## Delete Google Cloud resources.
 	@echo "Deleting Google Cloud Run v2 deployment..."
 	@mkdir -p .pulumi-state
-	@cd pulumi && pulumi login file://../.pulumi-state && (pulumi stack select dev || pulumi stack init dev) && pulumi destroy
+	@cd pulumi && if [ -d "venv" ]; then . venv/bin/activate; fi && pulumi login file://../.pulumi-state && (pulumi stack select dev || pulumi stack init dev) && pulumi destroy
 	@echo "✅ Deployment deleted successfully!"
 
 # Generate native image hints using GraalVM tracing agent.
@@ -250,7 +342,7 @@ native-build: ## Build GraalVM native image locally
 	@echo "✅ Native image built successfully!"
 
 .PHONY: native-run
-native-run: ## Run native image locally
+native-run: ## Run native image locally (with local database)
 	@echo "Running native image locally..."
 	@./build/native/nativeCompile/tg-journals
 

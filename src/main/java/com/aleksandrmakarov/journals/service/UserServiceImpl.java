@@ -1,16 +1,18 @@
 package com.aleksandrmakarov.journals.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.aleksandrmakarov.journals.model.Participant;
 import com.aleksandrmakarov.journals.model.StateType;
 import com.aleksandrmakarov.journals.model.User;
 import com.aleksandrmakarov.journals.model.UserRole;
 import com.aleksandrmakarov.journals.repository.UserRepository;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
@@ -18,6 +20,7 @@ public class UserServiceImpl implements UserService {
 
   @Autowired private UserRepository userRepository;
 
+  @Override
   public User findOrCreateUser(
       Long telegramId, String username, String firstName, String lastName) {
     Optional<User> existingUser = userRepository.findByTelegramId(telegramId);
@@ -62,22 +65,27 @@ public class UserServiceImpl implements UserService {
     }
   }
 
+  @Override
   public User findUserByTelegramId(Long telegramId) {
     return userRepository.findByTelegramId(telegramId).orElse(null);
   }
 
+  @Override
   public User findUserByUsername(String username) {
     return userRepository.findByUsername(username).orElse(null);
   }
 
+  @Override
   public List<User> getAdmins() {
     return userRepository.findAllByRole(UserRole.ADMIN);
   }
 
+  @Override
   public List<Participant> getParticipantsOrderedByLastJournal() {
     return userRepository.findParticipantsOrderedByLastJournal();
   }
 
+  @Override
   public void changeRole(User user, UserRole newRole) {
     if (user != null) {
       User updatedUser =
@@ -97,6 +105,7 @@ public class UserServiceImpl implements UserService {
     }
   }
 
+  @Override
   public User findOrCreateUserWithRole(
       Long telegramId, String username, String firstName, String lastName, UserRole role) {
     Optional<User> existingUser = userRepository.findByTelegramId(telegramId);
@@ -144,14 +153,17 @@ public class UserServiceImpl implements UserService {
 
   // --------------- User state operations moved here ---------------
 
+  @Override
   public void setQuestionFlowState(Long userId, Long sessionId, int questionIndex) {
     userRepository.upsertState(userId, StateType.QA_FLOW, sessionId, questionIndex);
   }
 
+  @Override
   public void setQuestionsUpdateMode(Long userId, Long sessionId) {
     userRepository.upsertState(userId, StateType.QUESTIONS_UPDATE, sessionId, -1);
   }
 
+  @Override
   public void clearUserState(Long userId, boolean isClearQuestionIndex) {
     userRepository.clearState(userId, isClearQuestionIndex);
   }
