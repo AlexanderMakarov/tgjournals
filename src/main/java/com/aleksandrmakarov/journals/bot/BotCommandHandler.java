@@ -14,6 +14,7 @@ import com.aleksandrmakarov.journals.model.Question;
 import com.aleksandrmakarov.journals.model.QuestionType;
 import com.aleksandrmakarov.journals.model.Session;
 import com.aleksandrmakarov.journals.model.SessionJournals;
+import com.aleksandrmakarov.journals.model.StateType;
 import com.aleksandrmakarov.journals.model.User;
 import com.aleksandrmakarov.journals.model.UserRole;
 import com.aleksandrmakarov.journals.security.ForbiddenException;
@@ -55,7 +56,7 @@ public class BotCommandHandler {
           + "Question 1 to answer after the session?\n"
           + AFTER_PREFIX
           + "Question 2 to answer after the session?\n```"
-          + "Send empty string to cancel.";
+          + "Run any command to cancel.";
 
   private static void requireAdmin(User user) {
     if (user == null || user.role() != UserRole.ADMIN) {
@@ -73,6 +74,13 @@ public class BotCommandHandler {
    * @return The response to the user.
    */
   public String handleCommand(String messageText, User user, Update update) {
+    // If user is in an active state and sends a command, clear the state (cancel the flow).
+    if (messageText != null && messageText.startsWith("/") && user.stateType() != null) {
+      userService.clearUserState(user.id(), user.stateType() == StateType.QA_FLOW);
+    }
+    if (messageText == null) {
+      return handleTextInput(user, null);
+    }
     String command = messageText.split(" ")[0].toLowerCase();
 
     switch (command) {
@@ -241,7 +249,7 @@ public class BotCommandHandler {
         + activeSession.name()
         + " (created: "
         + activeSession.createdAt().format(DATETIME_FORMATTER)
-        + ")\nPlease answer the following pre-session questions, send empty string to cancel the flow:\n❓ "
+        + ")\nPlease answer the following pre-session questions, run any command to cancel the flow:\n❓ "
         + questions.get(0).text();
   }
 
@@ -283,7 +291,7 @@ public class BotCommandHandler {
         + activeSession.name()
         + " (created: "
         + activeSession.createdAt().format(DATETIME_FORMATTER)
-        + ")\nPlease answer the following post-session questions, send empty string to cancel the flow:\n❓ "
+        + ")\nPlease answer the following post-session questions, run any command to cancel the flow:\n❓ "
         + currentQuestion.text();
   }
 
@@ -435,14 +443,11 @@ public class BotCommandHandler {
     if (user.stateType() == null) {
       return "You are not in a state of handling direct input. Run some command first, use /help to see a list.";
     }
-    switch (user.stateType()) {
-      case QUESTIONS_UPDATE:
-        return handleQuestionsUpdateFlow(user, messageText);
-      case QA_FLOW:
-        return handleQAFlow(user, messageText);
-      default:
-        return "Unsupported user state. Send empty string and use /help to start new command.";
-    }
+    return switch (user.stateType()) {
+        case QUESTIONS_UPDATE -> handleQuestionsUpdateFlow(user, messageText);
+        case QA_FLOW -> handleQAFlow(user, messageText);
+        default -> "Unsupported user state. Run any command to start new action.";
+    };
   }
 
   /**
@@ -450,11 +455,6 @@ public class BotCommandHandler {
    * text into list of Question entities using prefixes and updates session questions.
    */
   private String handleQuestionsUpdateFlow(User user, String messageText) {
-    if (messageText.trim().isEmpty()) {
-      userService.clearUserState(user.id(), false);
-      return "Questions update cancelled.";
-    }
-
     Session activeSession = sessionService.getActiveSession();
     if (activeSession == null) {
       userService.clearUserState(user.id(), false);
