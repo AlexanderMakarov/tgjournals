@@ -20,6 +20,7 @@ import com.aleksandrmakarov.journals.model.UserRole;
 import com.aleksandrmakarov.journals.security.ForbiddenException;
 import com.aleksandrmakarov.journals.service.JournalService;
 import com.aleksandrmakarov.journals.service.SessionService;
+import com.aleksandrmakarov.journals.service.TranslationService;
 import com.aleksandrmakarov.journals.service.UserService;
 
 /**
@@ -39,6 +40,8 @@ public class BotCommandHandler {
 
   @Autowired private JournalService journalService;
 
+  @Autowired private TranslationService translationService;
+
   public static final DateTimeFormatter DATETIME_FORMATTER =
       DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -46,23 +49,15 @@ public class BotCommandHandler {
   public static final String BEFORE_PREFIX = "Before: ";
   public static final String AFTER_PREFIX = "After: ";
 
-  /** Explanation for questions updates. */
-  public static final String QUESTIONS_UPDATE_EXPLANATION =
-      "Please provide questions in the following format:\n"
-          + "```\n"
-          + BEFORE_PREFIX
-          + "Question to answer before the session?\n"
-          + AFTER_PREFIX
-          + "Question 1 to answer after the session?\n"
-          + AFTER_PREFIX
-          + "Question 2 to answer after the session?\n```"
-          + "Run any command to cancel.";
-
-  private static void requireAdmin(User user) {
+  private void requireAdmin(User user, String locale) {
     if (user == null || user.role() != UserRole.ADMIN) {
       throw new ForbiddenException(
-          "Only admins are allowed to perform this action. Use /help for details.");
+          translationService.t("bot.forbidden", locale));
     }
+  }
+
+  public String getTranslation(String key, String locale, Object... args) {
+    return translationService.t(key, locale, args);
   }
 
   /**
@@ -71,91 +66,91 @@ public class BotCommandHandler {
    * @param messageText The text of the message received from the user.
    * @param user The user who sent the message.
    * @param update The update received from the user.
+   * @param locale The locale of the user.
    * @return The response to the user.
    */
-  public String handleCommand(String messageText, User user, Update update) {
+  public String handleCommand(String messageText, User user, Update update, String locale) {
     // If user is in an active state and sends a command, clear the state (cancel the flow).
     if (messageText != null && messageText.startsWith("/") && user.stateType() != null) {
       userService.clearUserState(user.id(), user.stateType() == StateType.QA_FLOW);
     }
     if (messageText == null) {
-      return handleTextInput(user, null);
+      return handleTextInput(user, null, locale);
     }
     String command = messageText.split(" ")[0].toLowerCase();
 
     switch (command) {
       case "/start":
-        return "Welcome to AM Journals Bot. Use /before and /after to answer questions before and after the session. Use /admins to see list of admins.";
+        return translationService.t("bot.welcome", locale);
 
       case "/help":
-        return getHelpMessage(user.role());
+        return getHelpMessage(user.role(), locale);
 
       case "/admins":
-        return handleAdminsCommand(user);
+        return handleAdminsCommand(user, locale);
 
       case "/set_questions":
-        return handleSetQuestionsCommand(user, messageText);
+        return handleSetQuestionsCommand(user, messageText, locale);
 
       case "/before":
-        return handleBeforeCommand(user);
+        return handleBeforeCommand(user, locale);
 
       case "/after":
-        return handleAfterCommand(user);
+        return handleAfterCommand(user, locale);
 
       case "/last5":
-        return handleLast5Command(user);
+        return handleLast5Command(user, locale);
 
       case "/last":
-        return handleLastCommand(user);
+        return handleLastCommand(user, locale);
 
       case "/last50":
-        return handleLast50Command(user);
+        return handleLast50Command(user, locale);
 
       case "/participants":
-        return handleParticipantsCommand(user);
+        return handleParticipantsCommand(user, locale);
 
       case "/promote":
-        return handlePromoteCommand(user, messageText);
+        return handlePromoteCommand(user, messageText, locale);
 
       case "/ban":
-          return handleBanCommand(user, messageText);
+          return handleBanCommand(user, messageText, locale);
 
       case "/unban":
-          return handleUnbanCommand(user, messageText);
+          return handleUnbanCommand(user, messageText, locale);
 
       case "/session":
-        return handleSessionCommand(user, messageText);
+        return handleSessionCommand(user, messageText, locale);
 
       default:
-        if (messageText != null && messageText.startsWith("/")) {
-          return "Unknown command. Use /help to see available commands.";
+        if (messageText.startsWith("/")) {
+          return translationService.t("bot.command.unknown", locale);
         }
-        return handleTextInput(user, messageText);
+        return handleTextInput(user, messageText, locale);
     }
   }
 
-  private String getHelpMessage(UserRole role) {
+  private String getHelpMessage(UserRole role, String locale) {
     StringBuilder help =
-        new StringBuilder(
-            "Bot allows to create and view journals with answers on questions for each session (before and after), players can answer questions one-by-one, and admin can view all journals.\n\n");
+        new StringBuilder(translationService.t("bot.help.intro", locale) + "\n\n");
 
     if (role == UserRole.ADMIN) {
-      help.append("👨‍🏫 <b>Admin Commands:</b>\n");
-      help.append("/session - View/replace current session\n");
-      help.append("/set_questions - Set current session questions\n");
-      help.append("/participants - View all participants\n");
-      help.append("/promote - Promote a user to admin role\n");
-      help.append("/ban - Ban a user, journals will stay\n");
-      help.append("/unban - Unban a user\n\n");
+      help.append(translationService.t("bot.help.admin.title", locale)).append("\n");
+      help.append("/session - ").append(translationService.t("bot.help.admin.session", locale)).append("\n");
+      help.append("/set_questions - ").append(translationService.t("bot.help.admin.set_questions", locale)).append("\n");
+      help.append("/participants - ").append(translationService.t("bot.help.admin.participants", locale)).append("\n");
+      help.append("/promote - ").append(translationService.t("bot.help.admin.promote", locale)).append("\n");
+      help.append("/ban - ").append(translationService.t("bot.help.admin.ban", locale)).append("\n");
+      help.append("/unban - ").append(translationService.t("bot.help.admin.unban", locale)).append("\n\n");
     }
 
-    help.append("👤 <b>Player Commands:</b>\n");
-    help.append("/before - Answer pre-session questions\n");
-    help.append("/after - Answer post-session questions\n");
-    help.append("/last - View last journal\n");
-    help.append("/last5 - View last 5 journals\n");
-    help.append("/last50 - View last 50 journals\n");
-    help.append("/admins - View list of admins");
+    help.append(translationService.t("bot.help.player.title", locale)).append("\n");
+    help.append("/before - ").append(translationService.t("bot.help.player.before", locale)).append("\n");
+    help.append("/after - ").append(translationService.t("bot.help.player.after", locale)).append("\n");
+    help.append("/last - ").append(translationService.t("bot.help.player.last", locale)).append("\n");
+    help.append("/last5 - ").append(translationService.t("bot.help.player.last5", locale)).append("\n");
+    help.append("/last50 - ").append(translationService.t("bot.help.player.last50", locale)).append("\n");
+    help.append("/admins - ").append(translationService.t("bot.help.player.admins", locale));
 
     return help.toString();
   }
@@ -164,40 +159,41 @@ public class BotCommandHandler {
    * Handles the `/session` command. Only for admins. If no arguments - prints current session and
    * questions. If name is provided - finishes current session and creates new one.
    */
-  private String handleSessionCommand(User user, String messageText) {
-    requireAdmin(user);
+  private String handleSessionCommand(User user, String messageText, String locale) {
+    requireAdmin(user, locale);
     String[] parts = messageText.split(" ", 2);
 
     // If no session name - just print current session (if exists).
     if (parts.length == 1) {
       var activeSession = sessionService.getActiveSession();
       if (activeSession == null) {
-        return "No active session found. Use `/session {name}` to create a new session.";
+        return translationService.t("bot.session.not_found", locale);
       }
-      SessionDisplayResult displayResult = buildSessionAndQuestionsDisplay(activeSession);
-      return displayResult.displayText();
+      SessionDisplayResult displayResult = buildSessionAndQuestionsDisplay(activeSession, locale);
+      StringBuilder response = new StringBuilder(displayResult.displayText());
+      if (!displayResult.hasQuestions()) {
+        response.append("\n\n").append(translationService.t("bot.session.questions.not_found", locale));
+      }
+      return response.toString();
     }
 
-    // Otherwise finish current session and create new one.
+    // Otherwise finish current session and ...
     String newSessionName = parts[1].trim();
     StringBuilder response = new StringBuilder();
-    var finishedSession = sessionService.finishActiveSession();
+    Session finishedSession = sessionService.finishActiveSession();
     if (finishedSession != null) {
-      response.append("✅ Session '").append(finishedSession.name()).append("' was finished.\n\n");
+      response.append(translationService.t("bot.session.finished", locale, finishedSession.name())).append("\n\n");
     }
-    var session = sessionService.createNewSession(newSessionName);
-    response.append("✅ Session '").append(newSessionName).append("' created successfully!\n\n");
-    SessionDisplayResult displayResult = buildSessionAndQuestionsDisplay(session);
-    // Either print existing questions or switch to question update (aka "set") mode.
-    if (displayResult.hasQuestions()) {
-      response
-          .append(displayResult.displayText())
-          .append("Use /set_questions command if need to update questions.");
+
+    // ... create new session.
+    Session session = sessionService.createNewSession(newSessionName);
+    response.append(translationService.t("bot.session.created", locale, newSessionName)).append("\n\n");
+    SessionDisplayResult displayResult = buildSessionAndQuestionsDisplay(session, locale);
+    response.append(displayResult.displayText());
+    if (!displayResult.hasQuestions()) {
+      response.append(translationService.t("bot.session.questions.not_found", locale));
     } else {
-      response
-          .append("No questions found for active session.\n")
-          .append(QUESTIONS_UPDATE_EXPLANATION);
-      userService.setQuestionsUpdateMode(user.id(), session.id());
+      response.append(translationService.t("bot.session.questions.update_hint", locale));
     }
     return response.toString();
   }
@@ -206,21 +202,21 @@ public class BotCommandHandler {
    * Handles the `/set_questions` command. Only for admins. Prints current session and questions,
    * explanation, and switches user to "question update" mode.
    */
-  private String handleSetQuestionsCommand(User user, String messageText) {
-    requireAdmin(user);
+  private String handleSetQuestionsCommand(User user, @SuppressWarnings("unused") String messageText, String locale) {
+    requireAdmin(user, locale);
 
     // Get active session.
     Session activeSession = sessionService.getActiveSession();
     if (activeSession == null) {
-      return "No active session found. Use `/session <name>` to create a new session.";
+      return translationService.t("bot.session.set_questions.not_found", locale);
     }
 
     // Add to response current session with questions.
-    SessionDisplayResult displayResult = buildSessionAndQuestionsDisplay(activeSession);
+    SessionDisplayResult displayResult = buildSessionAndQuestionsDisplay(activeSession, locale);
     StringBuilder response = new StringBuilder(displayResult.displayText());
 
     // Add explanation for questions update and return response.
-    response.append(QUESTIONS_UPDATE_EXPLANATION);
+    response.append(translationService.t("bot.session.questions.update_explanation", locale));
     userService.setQuestionsUpdateMode(user.id(), activeSession.id());
     return response.toString();
   }
@@ -229,44 +225,42 @@ public class BotCommandHandler {
    * Handles the `/before` command. Checks what questions are available and switches user to
    * "question flow" mode.
    */
-  private String handleBeforeCommand(User user) {
+  private String handleBeforeCommand(User user, String locale) {
     Session activeSession = sessionService.getActiveSession();
     if (activeSession == null) {
-      return "No active session found. Please ask your admin to create one first.";
+      return translationService.t("bot.before.no_session", locale);
     }
 
     // Get questions and check we have at least one 'before' question.
     List<Question> questions = sessionService.getQuestions(activeSession.id());
     if (questions.isEmpty()) {
-      return "No questions found for active session.\nPlease ask your admin to set questions first.";
+      return translationService.t("bot.before.no_questions", locale);
     } else if (questions.get(0).type() == QuestionType.AFTER) {
-      return "No 'before' questions found for active session.\nGood luck with the session, run /after command once you finish it.";
+      return translationService.t("bot.before.no_before_questions", locale);
     }
 
     // Update user state and start flow of answering questions.
     userService.setQuestionFlowState(user.id(), activeSession.id(), 0);
-    return "📝 <b>Session:</b> "
-        + activeSession.name()
-        + " (created: "
-        + activeSession.createdAt().format(DATETIME_FORMATTER)
-        + ")\nPlease answer the following pre-session questions, run any command to cancel the flow:\n❓ "
-        + questions.get(0).text();
+    return translationService.t("bot.before.start", locale,
+        activeSession.name(),
+        activeSession.createdAt().format(DATETIME_FORMATTER),
+        questions.get(0).text());
   }
 
   /**
    * Handles the `/after` command. Checks what questions are available and switches user to
    * "question flow" mode.
    */
-  private String handleAfterCommand(User user) {
+  private String handleAfterCommand(User user, String locale) {
     Session activeSession = sessionService.getActiveSession();
     if (activeSession == null) {
-      return "No active session found. Please ask your admin to create one first.";
+      return translationService.t("bot.after.no_session", locale);
     }
 
     // Get questions and check we have at least one 'after' question.
     List<Question> questions = sessionService.getQuestions(activeSession.id());
     if (questions.isEmpty()) {
-      return "No questions found for active session.\nPlease ask your admin to set questions first.";
+      return translationService.t("bot.after.no_questions", locale);
     }
 
     // Switch to next quesion (stored only "asked" one).
@@ -277,75 +271,71 @@ public class BotCommandHandler {
     }
 
     // Check 'after' question(s) exists and it is of right type.
-    if (questions.size() < currentIndex) {
-      return "No 'after' questions found for active session.\n✅ Done, thanks for your answers!";
+    if (questions.size() <= currentIndex) {
+      return translationService.t("bot.after.no_after_questions", locale);
     }
     Question currentQuestion = questions.get(currentIndex);
     if (currentQuestion.type() != QuestionType.AFTER) {
-      return "Wrong type of questions found for active session. Ask your admin to don't edit questions after they started to be answered.";
+      return translationService.t("bot.after.wrong_type", locale);
     }
 
     // Update user state and start flow of answering questions.
     userService.setQuestionFlowState(user.id(), activeSession.id(), currentIndex);
-    return "📝 <b>Session:</b> "
-        + activeSession.name()
-        + " (created: "
-        + activeSession.createdAt().format(DATETIME_FORMATTER)
-        + ")\nPlease answer the following post-session questions, run any command to cancel the flow:\n❓ "
-        + currentQuestion.text();
+    return translationService.t("bot.after.start", locale,
+        activeSession.name(),
+        activeSession.createdAt().format(DATETIME_FORMATTER),
+        currentQuestion.text());
   }
 
-  private String formatJournalsForDisplay(String prefix, List<SessionJournals> sessionJournals) {
+  private String formatJournalsForDisplay(String prefixKey, List<SessionJournals> sessionJournals, String locale) {
+    String prefix = translationService.t(prefixKey, locale);
     if (sessionJournals.isEmpty()) {
-      return prefix + ": No journals found.";
+      return translationService.t("bot.journals.not_found", locale, prefix);
     }
 
     StringBuilder sb = new StringBuilder(prefix).append(":\n\n");
     for (SessionJournals sessionJournal : sessionJournals) {
-      sb.append("📅 ")
-          .append(sessionJournal.sessionDate().format(DATETIME_FORMATTER))
-          .append(" '")
-          .append(sessionJournal.sessionName())
-          .append("':\n");
+      StringBuilder journalEntries = new StringBuilder();
       for (JournalWithQuestion journalWithQuestion : sessionJournal.journals()) {
-        sb.append("(")
-            .append(journalWithQuestion.questionType())
-            .append(") ")
-            .append(journalWithQuestion.question())
-            .append(" - ")
-            .append(journalWithQuestion.journal().answer())
-            .append("\n");
+        journalEntries.append(translationService.t("bot.journals.entry", locale,
+            journalWithQuestion.questionType().toString(),
+            journalWithQuestion.question(),
+            journalWithQuestion.journal().answer())).append("\n");
       }
+      sb.append(translationService.t("bot.journals.format", locale,
+          sessionJournal.sessionDate().format(DATETIME_FORMATTER),
+          sessionJournal.sessionName(),
+          journalEntries.toString()));
     }
     return sb.toString();
   }
 
   /** Handles the `/last` command. Returns last journal for the user. */
-  private String handleLastCommand(User user) {
+  private String handleLastCommand(User user, String locale) {
     List<SessionJournals> journals = sessionService.getJournalsForLastSessions(user.id(), 1);
-    return formatJournalsForDisplay("Last journal", journals);
+    return formatJournalsForDisplay("bot.journals.last", journals, locale);
   }
 
   /** Handles the `/last5` command. Returns last 5 journals for the user. */
-  private String handleLast5Command(User user) {
+  private String handleLast5Command(User user, String locale) {
     List<SessionJournals> journals = sessionService.getJournalsForLastSessions(user.id(), 5);
-    return formatJournalsForDisplay("Last 5 journals", journals);
+    return formatJournalsForDisplay("bot.journals.last5", journals, locale);
   }
 
   /** Handles the `/last50` command. Returns last 50 journals for the user. */
-  private String handleLast50Command(User user) {
+  private String handleLast50Command(User user, String locale) {
     List<SessionJournals> journals = sessionService.getJournalsForLastSessions(user.id(), 50);
-    return formatJournalsForDisplay("Last 50 journals", journals);
+    return formatJournalsForDisplay("bot.journals.last50", journals, locale);
   }
 
-  private String handleAdminsCommand(User user) {
+  private String handleAdminsCommand(User unused, String locale) {
     List<User> admins = userService.getAdmins();
     if (admins.isEmpty()) {
-      return "No admins found.";
+      return translationService.t("bot.admins.not_found", locale);
     }
-    StringBuilder response = new StringBuilder("📋 <b>Admins:</b>\n");
+    StringBuilder response = new StringBuilder(translationService.t("bot.admins.title", locale)).append("\n");
     for (User admin : admins) {
-      response.append("👤 ").append(admin.getDisplayName()).append("\n");
+      response.append(translationService.t("bot.admins.entry", locale, admin.getDisplayName()));
     }
     return response.toString();
   }
@@ -354,36 +344,33 @@ public class BotCommandHandler {
    * Handles the `/participants` command. Only for admins. Returns list of players ordered by last
    * journal.
    */
-  private String handleParticipantsCommand(User user) {
-    requireAdmin(user);
+  private String handleParticipantsCommand(User user, String locale) {
+    requireAdmin(user, locale);
 
     List<Participant> participants = userService.getParticipantsOrderedByLastJournal();
-    StringBuilder response = new StringBuilder("📋 <b>Participants:</b>\n");
+    StringBuilder response = new StringBuilder(translationService.t("bot.participants.title", locale)).append("\n");
     boolean hasAny = false;
     for (Participant participant : participants) {
       if (participant.sessionCount() == 0) {
         continue;
       }
       hasAny = true;
-      response
-          .append("👤 ")
-          .append(participant.user().getDisplayName())
-          .append(" - ")
-          .append(participant.sessionCount())
-          .append(" session(s)\n");
+      response.append(translationService.t("bot.participants.entry", locale,
+          participant.user().getDisplayName(),
+          participant.sessionCount())).append("\n");
     }
     if (!hasAny) {
-      return "No participants found.";
+      return translationService.t("bot.participants.not_found", locale);
     }
     return response.toString();
   }
 
   /** Handles the `/promote` command. Only for admins. Promotes a user to admin role. */
-  private String handlePromoteCommand(User user, String messageText) {
-    requireAdmin(user);
+  private String handlePromoteCommand(User user, String messageText, String locale) {
+    requireAdmin(user, locale);
     String[] parts = messageText.split(" ", 2);
     if (parts.length != 2) {
-      return "Use /promote @username to promote a user to admin role.";
+      return translationService.t("bot.promote.usage", locale);
     }
     String username = parts[1].trim();
     if (username.startsWith("@")) {
@@ -391,18 +378,18 @@ public class BotCommandHandler {
     }
     User targetUser = userService.findUserByUsername(username);
     if (targetUser == null) {
-      return "User with username '" + username + "' not found.";
+      return translationService.t("bot.promote.not_found", locale, username);
     }
     userService.changeRole(targetUser, UserRole.ADMIN);
-    return "User '" + targetUser.getDisplayName() + "' promoted to admin role.";
+    return translationService.t("bot.promote.success", locale, targetUser.getDisplayName());
   }
 
   /** Handles the `/ban` command. Only for admins. Bans a user from the bot. */
-  private String handleBanCommand(User user, String messageText) {
-    requireAdmin(user);
+  private String handleBanCommand(User user, String messageText, String locale) {
+    requireAdmin(user, locale);
     String[] parts = messageText.split(" ", 2);
     if (parts.length != 2) {
-      return "Use /ban @username to ban a user from the bot.";
+      return translationService.t("bot.ban.usage", locale);
     }
     String username = parts[1].trim();
     if (username.startsWith("@")) {
@@ -410,18 +397,18 @@ public class BotCommandHandler {
     }
     User targetUser = userService.findUserByUsername(username);
     if (targetUser == null) {
-      return "User with username '" + username + "' not found.";
+      return translationService.t("bot.ban.not_found", locale, username);
     }
     userService.changeRole(targetUser, UserRole.BANNED);
-    return "User '" + targetUser.getDisplayName() + "' is banned.";
+    return translationService.t("bot.ban.success", locale, targetUser.getDisplayName());
   }
 
   /** Handles the `/unban` command. Only for admins. Unbans a user from the bot. */
-  private String handleUnbanCommand(User user, String messageText) {
-    requireAdmin(user);
+  private String handleUnbanCommand(User user, String messageText, String locale) {
+    requireAdmin(user, locale);
     String[] parts = messageText.split(" ", 2);
     if (parts.length != 2) {
-      return "Use /unban @username to unban a user from the bot.";
+      return translationService.t("bot.unban.usage", locale);
     }
     String username = parts[1].trim();
     if (username.startsWith("@")) {
@@ -429,24 +416,24 @@ public class BotCommandHandler {
     }
     User targetUser = userService.findUserByUsername(username);
     if (targetUser == null) {
-      return "User with username '" + username + "' not found.";
+      return translationService.t("bot.unban.not_found", locale, username);
     }
     userService.changeRole(targetUser, UserRole.PLAYER);
-    return "User '" + targetUser.getDisplayName() + "' is unbanned.";
+    return translationService.t("bot.unban.success", locale, targetUser.getDisplayName());
   }
 
   /**
    * Handles the text input from the user when it doesn't have command prefix. Checks user state and
    * handles it.
    */
-  private String handleTextInput(User user, String messageText) {
+  private String handleTextInput(User user, String messageText, String locale) {
     if (user.stateType() == null) {
-      return "You are not in a state of handling direct input. Run some command first, use /help to see a list.";
+      return translationService.t("bot.error.not_in_state", locale);
     }
     return switch (user.stateType()) {
-        case QUESTIONS_UPDATE -> handleQuestionsUpdateFlow(user, messageText);
-        case QA_FLOW -> handleQAFlow(user, messageText);
-        default -> "Unsupported user state. Run any command to start new action.";
+        case QUESTIONS_UPDATE -> handleQuestionsUpdateFlow(user, messageText, locale);
+        case QA_FLOW -> handleQAFlow(user, messageText, locale);
+        default -> translationService.t("bot.error.unsupported_state", locale);
     };
   }
 
@@ -454,14 +441,16 @@ public class BotCommandHandler {
    * Handles the text input from the user when it is in "question update" state. Parses incoming
    * text into list of Question entities using prefixes and updates session questions.
    */
-  private String handleQuestionsUpdateFlow(User user, String messageText) {
+  private String handleQuestionsUpdateFlow(User user, String messageText, String locale) {
     Session activeSession = sessionService.getActiveSession();
     if (activeSession == null) {
       userService.clearUserState(user.id(), false);
-      return "No active session found. Use `/session <name>` to create a new session.";
+      return translationService.t("bot.questions.update.no_session", locale);
     }
 
     // Parse incoming text into list of Question entities using prefixes.
+    String beforePrefix = translationService.t("bot.prefix.before", locale);
+    String afterPrefix = translationService.t("bot.prefix.after", locale);
     String[] lines = messageText.split("\n");
     int questionOrder = 1; // Starts with 1.
     List<Question> parsedQuestions = new ArrayList<>();
@@ -469,12 +458,12 @@ public class BotCommandHandler {
       String line = raw.trim();
       if (line.isEmpty()) {
         continue;
-      } else if (line.startsWith(BEFORE_PREFIX)) {
-        String text = line.substring(BEFORE_PREFIX.length());
+      } else if (line.startsWith(beforePrefix)) {
+        String text = line.substring(beforePrefix.length());
         parsedQuestions.add(
             new Question(null, text, QuestionType.BEFORE, questionOrder++, activeSession.id()));
-      } else if (line.startsWith(AFTER_PREFIX)) {
-        String text = line.substring(AFTER_PREFIX.length());
+      } else if (line.startsWith(afterPrefix)) {
+        String text = line.substring(afterPrefix.length());
         parsedQuestions.add(
             new Question(null, text, QuestionType.AFTER, questionOrder++, activeSession.id()));
       }
@@ -485,31 +474,29 @@ public class BotCommandHandler {
     userService.clearUserState(user.id(), false);
 
     // Build display result.
-    var displayResult = buildCurrentQuestionsDisplay(activeSession);
-    return "Questions updated successfully to:\n" + displayResult;
+    var displayResult = buildCurrentQuestionsDisplay(activeSession, locale);
+    return translationService.t("bot.questions.update.success", locale, displayResult);
   }
 
   /**
    * Handles the text input from the user when it is in "question flow" state. Saves answer and
    * responses with next question or completion message.
    */
-  private String handleQAFlow(User user, String messageText) {
+  private String handleQAFlow(User user, String messageText, String locale) {
     var session = sessionService.getActiveSession();
     if (session == null) {
       userService.clearUserState(user.id(), true);
-      return "No active session found. Ask your admin to create a new session.";
+      return translationService.t("bot.qa.flow.no_session", locale);
     }
 
     if (user.stateSessionId() == null || !session.id().equals(user.stateSessionId())) {
       userService.clearUserState(user.id(), true);
-      return "Previous session was changed or finished and questions are not relevant anymore. Participate in new session '"
-          + session.name()
-          + "' with `/before` command.";
+      return translationService.t("bot.qa.flow.session_changed", locale, session.name());
     }
     int previousIndex = user.stateQuestionIndex();
     if (previousIndex < 0) {
       userService.clearUserState(user.id(), true);
-      return "Error with questions index. Ask your admin for help.";
+      return translationService.t("bot.qa.flow.index_error", locale);
     }
 
     // Get questions and current question index.
@@ -517,7 +504,7 @@ public class BotCommandHandler {
     int questionsCount = questions.size();
     if (previousIndex >= questionsCount) {
       userService.clearUserState(user.id(), true);
-      return "Error with finding right question. Ask your admin to don't edit questions after they started to be answered.";
+      return translationService.t("bot.qa.flow.question_error", locale);
     }
 
     // Save answer.
@@ -535,54 +522,53 @@ public class BotCommandHandler {
         // If we got next question of type "after" - stop flow for now.
         if (nextQuestion.type() == QuestionType.AFTER) {
           userService.clearUserState(user.id(), false);
-          return "✅ Done for now, good luck with the session, run /after command once you finish it.";
+          return translationService.t("bot.qa.flow.done_for_now", locale);
         }
 
         // If we got "before" question after "after" question - it is a bug.
         userService.clearUserState(user.id(), true);
-        return "Error with finding right type of question. Ask your admin to don't edit questions after they started to be answered.";
+        return translationService.t("bot.qa.flow.type_error", locale);
       }
 
       // Ask next question.
       userService.setQuestionFlowState(user.id(), session.id(), nextIndex);
-      return "☑️ Answer saved!\n❓ " + nextQuestion.text();
+      return translationService.t("bot.qa.flow.answer_saved", locale, nextQuestion.text());
     } else {
 
       // Last question - exit flow.
       userService.clearUserState(user.id(), true);
-      return "✅ Done, thank you for your answers!";
+      return translationService.t("bot.qa.flow.done", locale);
     }
   }
 
   /**
    * Builds a formatted display string for the current session and its questions.
    *
-   * @param activeSession The active session to display
+   * @param activeSession The active session to display.
+   * @param locale The locale for translations.
    * @return SessionDisplayResult containing display text, session, and hasQuestions flag
    */
-  private SessionDisplayResult buildSessionAndQuestionsDisplay(Session activeSession) {
-    StringBuilder response = new StringBuilder("📝 <b>Current Session:</b>\n");
-    response.append("Name: ").append(activeSession.name()).append("\n");
+  private SessionDisplayResult buildSessionAndQuestionsDisplay(Session activeSession, String locale) {
+    StringBuilder response = new StringBuilder(translationService.t("bot.session.current.title", locale)).append("\n");
+    response.append(translationService.t("bot.session.current.name", locale, activeSession.name())).append("\n");
     response
-        .append("Created: ")
-        .append(activeSession.createdAt().format(DATETIME_FORMATTER))
+        .append(translationService.t("bot.session.current.created", locale,
+            activeSession.createdAt().format(DATETIME_FORMATTER)))
         .append("\n\n");
-    String currentQuestionsDisplay = buildCurrentQuestionsDisplay(activeSession);
+    String currentQuestionsDisplay = buildCurrentQuestionsDisplay(activeSession, locale);
     if (!currentQuestionsDisplay.isEmpty()) {
-      response.append("📋 <b>Questions:</b>\n");
+      response.append(translationService.t("bot.session.questions.title", locale)).append("\n");
       response.append(currentQuestionsDisplay);
-    } else {
-      response.append(
-          "No questions found for active session.\nUse /set_questions command to set questions.");
     }
     return new SessionDisplayResult(
         response.toString(), activeSession, !currentQuestionsDisplay.isEmpty());
   }
 
-  private String buildCurrentQuestionsDisplay(Session activeSession) {
+  private String buildCurrentQuestionsDisplay(Session activeSession, String locale) {
     StringBuilder response = new StringBuilder();
     sessionService.getQuestions(activeSession.id()).stream()
-        .map(q -> q.type() + ": " + q.text() + "\n")
+        .map(q -> translationService.t("bot.questions.display.type", locale,
+            q.type().toString(), q.text()) + "\n")
         .forEach(response::append);
     if (response.length() > 0) {
       response.append("\n");

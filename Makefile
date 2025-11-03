@@ -278,8 +278,8 @@ docker-stop: ## Stop Docker containers using port 8080
 	@docker ps -q --filter "publish=8080" | xargs -r docker stop
 
 .PHONY: gcp-deploy
-gcp-deploy: ## Deploy to Google Cloud Functions using Pulumi
-	@echo "Deploying to Google Cloud Functions..."
+gcp-deploy: ## Deploy to Google Cloud Run using Pulumi
+	@echo "Deploying to Google Cloud Run..."
 	@if [ -z "$(GCP_PROJECT_ID)" ]; then \
 		echo "ERROR: GCP_PROJECT_ID not set in .env file"; \
 		exit 1; \
@@ -288,6 +288,9 @@ gcp-deploy: ## Deploy to Google Cloud Functions using Pulumi
 	# Use local filesystem state for Pulumi. OK for one developer.
 	@cd pulumi && if [ -d "venv" ]; then . venv/bin/activate; fi && pulumi login file://../.pulumi-state && (pulumi stack select dev || pulumi stack init dev) && pulumi config set gcp:project $(GCP_PROJECT_ID) --stack dev && pulumi config set gcp:region $(GCP_REGION) --stack dev && pulumi up --yes
 	@echo "✅ Deployment completed successfully!"
+
+.PHONY: redeploy
+redeploy: docker-build gcp-deploy ## Rebuild image and deploy to Google Cloud Run
 
 .PHONY: gcp-status
 gcp-status: ## View Google Cloud Run v2 status

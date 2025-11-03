@@ -1,15 +1,16 @@
 package com.aleksandrmakarov.journals.config;
 
-import com.aleksandrmakarov.journals.bot.JournalsBot;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.aleksandrmakarov.journals.bot.JournalsBot;
 
 /**
  * Configuration for Telegram bot using webhook mode. For webhook bots, we don't need to register
  * with TelegramBotsApi. The webhook controller handles incoming updates directly.
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 public class TelegramBotConfig {
 
   @Value("${telegram.bot.token}")

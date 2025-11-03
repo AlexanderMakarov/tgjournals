@@ -479,8 +479,8 @@ make health            # Check local application health
 
 # Roadmap/TODO
 
+- [x] Add support for localization + Russian.
 - [ ] Add multiple teams.
-- [ ] Add support for localization + Russian.
 - [ ] Send notifications to players about new sessions (to avoid spam players can just delete bot - journals will stay anyway).
 - [ ] Auto-remove old journals or extend ability to view them.
 - [ ] Search in team journals by text (admin only).

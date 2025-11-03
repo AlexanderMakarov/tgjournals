@@ -86,20 +86,27 @@ public class JournalsBot implements TelegramWebhookBot {
               + ")";
       logger.info("{} received: '{}'", logPrefix, messageText);
 
+      // Get user locale from Telegram (defaults to "en" if not available)
+      String locale = update.getMessage().getFrom().getLanguageCode();
+      if (locale == null || locale.isEmpty()) {
+        locale = "en";
+      }
+
       // Check user is not banned.
       if (user.role() == UserRole.BANNED) {
         logger.info("{} is banned, skipping command handling", logPrefix);
-        return createSendMessage(chatId, "You are banned from the bot. Please contact the admin to unban.");
+        String bannedMessage = commandHandler.getTranslation("bot.banned", locale);
+        return createSendMessage(chatId, bannedMessage);
       }
 
       try {
-        String response = commandHandler.handleCommand(messageText, user, update);
+        String response = commandHandler.handleCommand(messageText, user, update, locale);
         logger.info("{} is answered: {}", logPrefix, response.replace("\n", "⏎"));
 
         // Validate response
         if (response == null || response.trim().isEmpty()) {
           logger.warn("Empty response from command handler for: {}", messageText);
-          response = "Sorry, I didn't understand that. Use /help to see available commands.";
+          response = commandHandler.getTranslation("bot.error.empty_response", locale);
         }
 
         return createSendMessage(chatId, response);
@@ -107,7 +114,8 @@ public class JournalsBot implements TelegramWebhookBot {
         return createSendMessage(chatId, fe.getMessage());
       } catch (Exception e) {
         logger.error("{} failed: {}", logPrefix, e.getMessage(), e);
-        return createSendMessage(chatId, "Sorry, an error occurred. Please try again.");
+        String errorMessage = commandHandler.getTranslation("bot.error.occurred", locale);
+        return createSendMessage(chatId, errorMessage);
       }
     } else {
       logger.warn("Received update {} without text message. Update type: message={}, callbackQuery={}, editedMessage={}", 

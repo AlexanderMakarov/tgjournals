@@ -55,6 +55,7 @@ tasks.named('test') {
 	useJUnitPlatform()
 	finalizedBy 'jacocoTestReport'
 	dependsOn = []
+	systemProperty 'spring.aot.enabled', 'false'
 }
 
 // Prevent bootRun task from being up-to-date ever.
@@ -153,6 +154,11 @@ if (System.getenv('AUTO_GENERATE_HINTS') == 'true') {
 	tasks.named('processAot') {
 		dependsOn 'generateNativeHints'
 	}
+}
+
+// Disable AOT processing for tests to improve test performance
+tasks.matching { it.name.startsWith('processTestAot') }.configureEach {
+	enabled = false
 }
 
 // GraalVM Native Image configuration

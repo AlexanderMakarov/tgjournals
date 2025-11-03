@@ -1,5 +1,12 @@
 package com.aleksandrmakarov.journals.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.aleksandrmakarov.journals.model.Question;
 import com.aleksandrmakarov.journals.model.QuestionType;
 import com.aleksandrmakarov.journals.model.Session;
@@ -7,15 +14,10 @@ import com.aleksandrmakarov.journals.model.SessionJournals;
 import com.aleksandrmakarov.journals.repository.JournalRepository;
 import com.aleksandrmakarov.journals.repository.QuestionRepository;
 import com.aleksandrmakarov.journals.repository.SessionRepository;
-import java.time.LocalDateTime;
-import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
-public class PostgresSessionImpl implements SessionService {
+public class SessionServiceImpl implements SessionService {
 
   @Autowired private SessionRepository sessionRepository;
 

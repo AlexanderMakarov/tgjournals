@@ -21,7 +21,6 @@ import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 
-import static com.aleksandrmakarov.journals.bot.BotCommandHandler.QUESTIONS_UPDATE_EXPLANATION;
 import com.aleksandrmakarov.journals.config.TestDatabaseInitializer;
 import com.aleksandrmakarov.journals.model.Journal;
 import com.aleksandrmakarov.journals.model.Question;
@@ -124,6 +123,7 @@ public class WebhookIntegrationTest {
             user.telegramId(), user.username(), false);
     from.setFirstName(user.firstName());
     from.setLastName(user.lastName());
+    from.setLanguageCode("en");
     message.setFrom(from);
 
     update.setMessage(message);
@@ -350,50 +350,57 @@ public class WebhookIntegrationTest {
     String response = sendWebhookRequestAndGetResponse(admin, "/session Default Session");
     assertThat(response)
         .contains(
-            "✅ Session 'Default Session' created successfully!\n\nNo questions found for active session.\n"
-                + QUESTIONS_UPDATE_EXPLANATION);
+            "✅ Session 'Default Session' created successfully!\n\n📝 <b>Current Session:</b>\nName: Default Session\nCreated: ");
+    assertThat(response).contains("\n\nNo questions found for active session.\nUse /set_questions command to set questions.");
 
-    // Step 2: Coach provides questions.
+
+    // Step 2: Coach runs set_questions command.
+    response = sendWebhookRequestAndGetResponse(admin, "/set_questions");
+    assertThat(response).contains("📝 <b>Current Session:</b>\nName: Default Session\nCreated: ");
+    assertThat(response)
+        .contains("\n\nPlease provide questions in the following format:\n```\nBefore: Question to answer before the session?\nAfter: Question 1 to answer after the session?\nAfter: Question 2 to answer after the session?\n```\nRun any command to cancel.");
+
+    // Step 3: Coach provides questions.
     response =
         sendWebhookRequestAndGetResponse(admin, "Before: B1?\nBefore: B2\nAfter: A1\nAfter: A2");
     assertThat(response)
         .contains(
             "Questions updated successfully to:\nBEFORE: B1?\nBEFORE: B2\nAFTER: A1\nAFTER: A2\n\n");
 
-    // Step 3: Player starts before questions.
+    // Step 4: Player starts before questions.
     response = sendWebhookRequestAndGetResponse(PLAYER, "/before");
     // Assert
     assertThat(response).contains("📝 <b>Session:</b> Default Session (created: ");
     assertThat(response)
         .contains(")\nPlease answer the following pre-session questions, run any command to cancel the flow:\n❓ B1?");
 
-    // Step 4: Player answers first 'before' question.
+    // Step 5: Player answers first 'before' question.
     response = sendWebhookRequestAndGetResponse(PLAYER, "B1 answer");
     assertThat(response).contains("☑️ Answer saved!\n❓ B2");
 
-    // Step 5: Player answers second 'before' question - should automatically
+    // Step 6: Player answers second 'before' question - should automatically
     // transition to 'after' questions.
     response = sendWebhookRequestAndGetResponse(PLAYER, "B2 answer");
     assertThat(response)
         .contains(
             "✅ Done for now, good luck with the session, run /after command once you finish it.");
 
-    // Step 6: Player starts 'after' questions.
+    // Step 7: Player starts 'after' questions.
     response = sendWebhookRequestAndGetResponse(PLAYER, "/after");
     // Assert
     assertThat(response).contains("📝 <b>Session:</b> Default Session (created: ");
     assertThat(response)
         .contains(")\nPlease answer the following post-session questions, run any command to cancel the flow:\n❓ A1");
 
-    // Step 7: Player answers first 'after' question.
+    // Step 8: Player answers first 'after' question.
     response = sendWebhookRequestAndGetResponse(PLAYER, "A1 answer");
     assertThat(response).contains("☑️ Answer saved!\n❓ A2");
 
-    // Step 8: Player answers second 'after' question.
+    // Step 9: Player answers second 'after' question.
     response = sendWebhookRequestAndGetResponse(PLAYER, "A2 answer");
     assertThat(response).contains("✅ Done, thank you for your answers!");
 
-    // Step 9: Player checks their last journal.
+    // Step 10: Player checks their last journal.
     response = sendWebhookRequestAndGetResponse(PLAYER, "/last");
     assertThat(response).contains("Last journal:\n\n📅 ");
     assertThat(response)
@@ -410,34 +417,40 @@ public class WebhookIntegrationTest {
     String response = sendWebhookRequestAndGetResponse(admin, "/session first session");
     assertThat(response)
         .contains(
-            "✅ Session 'first session' created successfully!\n\nNo questions found for active session.\n"
-                + QUESTIONS_UPDATE_EXPLANATION);
+            "✅ Session 'first session' created successfully!\n\n📝 <b>Current Session:</b>\nName: first session\nCreated: ");
+    assertThat(response).contains("\n\nNo questions found for active session.\nUse /set_questions command to set questions.");
 
-    // Step 2: Coach provides questions.
+    // Step 2: Coach runs set_questions command.
+    response = sendWebhookRequestAndGetResponse(admin, "/set_questions");
+    assertThat(response).contains("📝 <b>Current Session:</b>\nName: first session\nCreated: ");
+    assertThat(response)
+        .contains("\n\nPlease provide questions in the following format:\n```\nBefore: Question to answer before the session?\nAfter: Question 1 to answer after the session?\nAfter: Question 2 to answer after the session?\n```\nRun any command to cancel.");
+
+    // Step 3: Coach provides questions.
     response =
         sendWebhookRequestAndGetResponse(admin, "Before: B1?\nBefore: B2\nAfter: A1\nAfter: A2");
     assertThat(response)
         .contains(
             "Questions updated successfully to:\nBEFORE: B1?\nBEFORE: B2\nAFTER: A1\nAFTER: A2\n\n");
 
-    // Step 3: Player starts before questions.
+    // Step 4: Player starts before questions.
     response = sendWebhookRequestAndGetResponse(PLAYER, "/before");
     // Assert
     assertThat(response).contains("📝 <b>Session:</b> first session (created: ");
     assertThat(response)
         .contains(")\nPlease answer the following pre-session questions, run any command to cancel the flow:\n❓ B1?");
 
-    // Step 4: Player answers first 'before' question.
+    // Step 5: Player answers first 'before' question.
     response = sendWebhookRequestAndGetResponse(PLAYER, "B1 answer");
     assertThat(response).contains("☑️ Answer saved!\n❓ B2");
 
-    // Step 5: Player cancels flow by running /last command
+    // Step 6: Player cancels flow by running /last command
     response = sendWebhookRequestAndGetResponse(PLAYER, "/last");
     assertThat(response).contains("Last journal:\n\n📅 ");
     assertThat(response)
         .contains(" 'first session':\n(BEFORE) B1? - B1 answer\n");
 
-    // Step 6: Player sends random text
+    // Step 7: Player sends random text
     response = sendWebhookRequestAndGetResponse(PLAYER, "random text");
     assertThat(response).contains("You are not in a state of handling direct input. Run some command first, use /help to see a list.");
   }
@@ -500,14 +513,14 @@ public class WebhookIntegrationTest {
             "✅ Session 'Default Session' created successfully!\n\n📝 <b>Current Session:</b>\nName: Default Session\nCreated: ");
     assertThat(response)
         .contains(
-            "\n📋 <b>Questions:</b>\nBEFORE: B1\nAFTER: A1\n\nUse /set_questions command if need to update questions.");
+            "\n\n📋 <b>Questions:</b>\nBEFORE: B1\nAFTER: A1\n\nUse /set_questions command if need to update questions.");
 
     // Step 2: Coach runs /set_questions command.
     response = sendWebhookRequestAndGetResponse(admin, "/set_questions");
     assertThat(response).contains("📝 <b>Current Session:</b>\nName: Default Session\nCreated: ");
     assertThat(response)
         .contains(
-            "\n📋 <b>Questions:</b>\nBEFORE: B1\nAFTER: A1\n\n" + QUESTIONS_UPDATE_EXPLANATION);
+            "\n📋 <b>Questions:</b>\nBEFORE: B1\nAFTER: A1\n\nPlease provide questions in the following format:\n```\nBefore: Question to answer before the session?\nAfter: Question 1 to answer after the session?\nAfter: Question 2 to answer after the session?\n```\nRun any command to cancel.");
 
     // Step 3: Coach cancels update by running a command (e.g., /help)
     response = sendWebhookRequestAndGetResponse(admin, "/help");
