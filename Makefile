@@ -204,19 +204,36 @@ db-test-prod: ## Test connection to production database (uses DB_PROD_* variable
 		exit 1; \
 	fi
 
-.PHONY: db-reset
-db-reset: ## Reset database (drop and recreate, WARNING: deletes all data!)
-	@echo "⚠️  WARNING: This will delete all data in the 'journals' database!"
+.PHONY: db-reset-test
+db-reset-test: ## Reset test database only (drop and recreate, WARNING: deletes all test data!)
+	@echo "⚠️  WARNING: This will delete all data in the 'test_journals' database!"
 	@read -p "Are you sure? Type 'yes' to continue: " confirm; \
 	if [ "$$confirm" != "yes" ]; then \
 		echo "Cancelled."; \
 		exit 1; \
 	fi
-	@echo "Dropping and recreating database..."
+	@echo "Dropping and recreating test database..."
+	@PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d postgres -c "DROP DATABASE IF EXISTS test_journals;" 2>/dev/null || true
+	@PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d postgres -c "CREATE DATABASE test_journals;" 2>/dev/null || \
+		(echo "Failed to recreate test database. Check DB_USERNAME/DB_PASSWORD in .env file." && exit 1)
+	@echo "✅ Test database reset complete! Tables will be created on next test run."
+
+.PHONY: db-reset
+db-reset: ## Reset both databases (drop and recreate, WARNING: deletes all data!)
+	@echo "⚠️  WARNING: This will delete all data in both 'journals' and 'test_journals' databases!"
+	@read -p "Are you sure? Type 'yes' to continue: " confirm; \
+	if [ "$$confirm" != "yes" ]; then \
+		echo "Cancelled."; \
+		exit 1; \
+	fi
+	@echo "Dropping and recreating databases..."
 	@PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d postgres -c "DROP DATABASE IF EXISTS journals;" 2>/dev/null || true
+	@PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d postgres -c "DROP DATABASE IF EXISTS test_journals;" 2>/dev/null || true
 	@PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d postgres -c "CREATE DATABASE journals;" 2>/dev/null || \
-		(echo "Failed to recreate database. Check DB_USERNAME/DB_PASSWORD in .env file." && exit 1)
-	@echo "✅ Database reset complete! Tables will be created on next app start."
+		(echo "Failed to recreate 'journals' database. Check DB_USERNAME/DB_PASSWORD in .env file." && exit 1)
+	@PGPASSWORD=$(DB_PASSWORD) psql -h localhost -U $(DB_USERNAME) -d postgres -c "CREATE DATABASE test_journals;" 2>/dev/null || \
+		(echo "Failed to recreate 'test_journals' database. Check DB_USERNAME/DB_PASSWORD in .env file." && exit 1)
+	@echo "✅ Databases reset complete! Tables will be created on next app/test start."
 
 .PHONY: db-backup
 db-backup: ## Backup database to SQL file
@@ -289,9 +306,6 @@ gcp-deploy: ## Deploy to Google Cloud Run using Pulumi
 	@cd pulumi && if [ -d "venv" ]; then . venv/bin/activate; fi && pulumi login file://../.pulumi-state && (pulumi stack select dev || pulumi stack init dev) && pulumi config set gcp:project $(GCP_PROJECT_ID) --stack dev && pulumi config set gcp:region $(GCP_REGION) --stack dev && pulumi up --yes
 	@echo "✅ Deployment completed successfully!"
 
-.PHONY: redeploy
-redeploy: docker-build gcp-deploy ## Rebuild image and deploy to Google Cloud Run
-
 .PHONY: gcp-status
 gcp-status: ## View Google Cloud Run v2 status
 	@echo "Fetching Google Cloud Run v2 status..."
@@ -308,7 +322,7 @@ gcp-logs: ## View Google Cloud Run v2 logs
 		echo "ERROR: GCP_PROJECT_ID not set in .env file"; \
 		exit 1; \
 	fi
-	@gcloud run services logs read $(FUNCTION_NAME) --region=$(GCP_REGION) --project=$(GCP_PROJECT_ID) --limit=50
+	@gcloud run services logs read $(FUNCTION_NAME) --region=$(GCP_REGION) --project=$(GCP_PROJECT_ID) --limit=100
 
 .PHONY: gcp-delete
 gcp-delete: ## Delete Google Cloud resources.
@@ -317,26 +331,20 @@ gcp-delete: ## Delete Google Cloud resources.
 	@cd pulumi && if [ -d "venv" ]; then . venv/bin/activate; fi && pulumi login file://../.pulumi-state && (pulumi stack select dev || pulumi stack init dev) && pulumi destroy
 	@echo "✅ Deployment deleted successfully!"
 
-# Generate native image hints using GraalVM tracing agent.
-.PHONY: native-update-hints
-native-update-hints:
-	@echo "🔍 Generating native image hints with GraalVM tracing agent..."
+# Generate native image hints by running the test suite with GraalVM agent.
+.PHONY: test-update-native-hints
+test-update-native-hints: db-setup
+	@echo "🔍 Generating native image hints by running tests with GraalVM tracing agent..."
 	@echo ""
-	@echo "📋 Instructions:"
-	@echo "  1. The app will start in JVM mode with tracing enabled"
-	@echo "  2. Send a Telegram messages to make your bot use all features"
-	@echo "  3. Test any other app features"
-	@echo "  4. Press Ctrl+C when done"
+	@echo "📋 This will:"
+	@echo "  - Run the full test suite with agent attached"
+	@echo "  - Merge hints into the project metadata directory"
+	@echo "  - Use the default 'java' from PATH (must be GraalVM)"
 	@echo ""
-	@./gradlew generateNativeHints || true
+	@./gradlew --no-daemon testWithNativeHints || { echo "❌ Tests failed"; exit 1; }
 	@echo ""
-	@echo "✅ Hints generated/merged into:"
+	@echo "✅ Hints should be generated/merged into:"
 	@echo "   src/main/resources/META-INF/native-image/com.aleksandrmakarov/tg-journals/"
-	@echo ""
-	@echo "📦 Next steps:"
-	@echo "   1. Review the generated JSON files (optional)"
-	@echo "   2. Rebuild Docker image: make docker-build"
-	@echo "   3. Test the native image: make docker-run"
 
 .PHONY: native-build
 native-build: ## Build GraalVM native image locally
@@ -353,6 +361,9 @@ native-run: ## Run native image locally (with local database)
 full-deploy: native-build docker-build gcp-deploy ## Complete deployment pipeline
 	@echo "✅ Full deployment pipeline completed!"
 
-.PHONY: quick-deploy
-quick-deploy: docker-build gcp-deploy ## Quick deployment (assumes native image already built)
-	@echo "✅ Quick deployment completed!"
+.PHONY: deploy
+deploy: docker-build gcp-deploy ## Rebuild Docker image (includes native image) and deploy to GCP
+	@echo "✅ Deployment completed!"
+	@echo ""
+	@echo "💡 Note: If you've added new reflection/resource access patterns,"
+	@echo "   run 'make test-update-native-hints' first, commit the updated hints, then deploy again."

@@ -3,37 +3,30 @@ package com.aleksandrmakarov.journals.model;
 import java.time.LocalDateTime;
 
 /**
- * Represents a user in the journals system. Can be either a COACH or PLAYER with different
- * permissions.
+ * Represents a user in the journals system. Can be either a COACH or PLAYER
+ * with different permissions.
  */
-public record User(
-    Long id,
-    Long telegramId,
-    String username,
-    String firstName,
-    String lastName,
-    UserRole role,
-    LocalDateTime createdAt,
-    StateType stateType,
-    Long stateSessionId,
-    int stateQuestionIndex,
-    LocalDateTime stateUpdatedAt) {
+public record User(Long id, Long telegramId, String username, String firstName, String lastName, UserRole role,
+		LocalDateTime createdAt, StateType stateType, Long stateSessionId, int stateQuestionIndex,
+		LocalDateTime stateUpdatedAt, String statePayload) {
 
-  /**
-   * Returns a formatted display name for the user with {@code @username}.
-   *
-   * @return Formatted display name
-   */
-  public String getDisplayName() {
-    StringBuilder name = new StringBuilder();
-    if (firstName != null) name.append(firstName);
-    if (lastName != null) {
-      if (name.length() > 0) name.append(" ");
-      name.append(lastName);
-    }
-    if (username != null) {
-      name.append(" (@").append(username).append(")");
-    }
-    return name.toString();
-  }
+	/**
+	 * Returns a formatted display name for the user with {@code @username}.
+	 *
+	 * @return Formatted display name
+	 */
+	public String getDisplayName() {
+		StringBuilder name = new StringBuilder();
+		if (firstName != null)
+			name.append(firstName);
+		if (lastName != null) {
+			if (name.length() > 0)
+				name.append(" ");
+			name.append(lastName);
+		}
+		if (username != null) {
+			name.append(" (@").append(username).append(")");
+		}
+		return name.toString();
+	}
 }

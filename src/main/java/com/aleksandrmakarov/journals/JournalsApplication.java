@@ -9,7 +9,7 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 @ImportRuntimeHints({RepositoryRuntimeHints.class})
 public class JournalsApplication {
 
-  public static void main(String[] args) {
-    SpringApplication.run(JournalsApplication.class, args);
-  }
+	public static void main(String[] args) {
+		SpringApplication.run(JournalsApplication.class, args);
+	}
 }

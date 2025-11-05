@@ -8,15 +8,15 @@ import java.util.List;
 /** Session service interface. */
 public interface SessionService {
 
-  Session getActiveSession();
+	Session getActiveSession();
 
-  Session createNewSession(String name);
+	Session createNewSession(String name);
 
-  Session finishActiveSession();
+	Session finishActiveSession();
 
-  void updateSessionQuestions(Session session, List<Question> questions);
+	void updateSessionQuestions(Session session, List<Question> questions);
 
-  List<Question> getQuestions(Long sessionId);
+	List<Question> getQuestions(Long sessionId);
 
-  List<SessionJournals> getJournalsForLastSessions(Long userId, int limitLastSessions);
+	List<SessionJournals> getJournalsForLastSessions(Long userId, int limitLastSessions);
 }

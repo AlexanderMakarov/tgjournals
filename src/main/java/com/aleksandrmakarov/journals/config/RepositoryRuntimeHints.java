@@ -13,20 +13,16 @@ import org.springframework.core.DecoratingProxy;
 
 public class RepositoryRuntimeHints implements RuntimeHintsRegistrar {
 
-  @Override
-  public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-    ProxyHints proxyHints = hints.proxies();
+	@Override
+	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+		ProxyHints proxyHints = hints.proxies();
 
-    proxyHints.registerJdkProxy(
-        UserRepository.class, SpringProxy.class, Advised.class, DecoratingProxy.class);
+		proxyHints.registerJdkProxy(UserRepository.class, SpringProxy.class, Advised.class, DecoratingProxy.class);
 
-    proxyHints.registerJdkProxy(
-        SessionRepository.class, SpringProxy.class, Advised.class, DecoratingProxy.class);
+		proxyHints.registerJdkProxy(SessionRepository.class, SpringProxy.class, Advised.class, DecoratingProxy.class);
 
-    proxyHints.registerJdkProxy(
-        JournalRepository.class, SpringProxy.class, Advised.class, DecoratingProxy.class);
+		proxyHints.registerJdkProxy(JournalRepository.class, SpringProxy.class, Advised.class, DecoratingProxy.class);
 
-    proxyHints.registerJdkProxy(
-        QuestionRepository.class, SpringProxy.class, Advised.class, DecoratingProxy.class);
-  }
+		proxyHints.registerJdkProxy(QuestionRepository.class, SpringProxy.class, Advised.class, DecoratingProxy.class);
+	}
 }

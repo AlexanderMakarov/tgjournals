@@ -4,6 +4,7 @@ import os
 import subprocess
 from dotenv import load_dotenv
 from pathlib import Path
+from datetime import datetime, timezone
 
 # Load environment variables from .env file
 # Use interpolate=False to prevent variable expansion, override=True to overwrite Make-expanded values
@@ -60,7 +61,10 @@ artifact_registry_repo = gcp.artifactregistry.Repository(
 # Docker image configuration
 # Artifact Registry format: {region}-docker.pkg.dev/{project_id}/{repository_id}/{image_name}
 image_name_base = f"{region}-docker.pkg.dev/{project_id}/tg-journals/tg-journals"
-image_tag = "latest"  # FYI: not good but easiest to maintain.
+# Use a unique tag based on UTC datetime with milliseconds, docker-tag safe
+_now = datetime.now(timezone.utc)
+_ms = f"{int(_now.microsecond/1000):03d}"
+image_tag = f"{_now.strftime('%Y%m%dt%H%M%S')}{_ms}"
 
 # Create a service account for the Cloud Function
 service_account = gcp.serviceaccount.Account(
@@ -88,7 +92,7 @@ gcp.projects.IAMMember(
 # Use locally built Docker image.
 # We need to wait for the registry to be created before pushing
 def push_local_image():
-    """Push locally built Docker image to Artifact Registry"""
+    """Push locally built Docker image to Artifact Registry and return versioned tag reference"""
     try:
         # Check if local image exists
         local_image = "tg-journals:latest"
@@ -110,10 +114,53 @@ def push_local_image():
         # Push to Artifact Registry
         push_cmd = ["docker", "push", full_image_name]
         subprocess.run(push_cmd, check=True)
-        
         return full_image_name
     except subprocess.CalledProcessError as e:
         raise Exception(f"Failed to push local Docker image: {e}")
+
+
+def cleanup_old_images_after_deploy(_: str) -> str:
+    """Remove older image tags keeping only the 3 most recent. Runs after deploy succeeds."""
+    try:
+        # List tags for this specific image, newest first
+        image_path = f"{region}-docker.pkg.dev/{project_id}/tg-journals/tg-journals"
+        list_cmd = [
+            "gcloud", "artifacts", "docker", "images", "list",
+            image_path,
+            "--format=csv[no-heading](NAME,CREATE_TIME)",
+            "--include-tags"
+        ]
+        list_result = subprocess.run(list_cmd, capture_output=True, text=True, check=True)
+        rows = [line.strip() for line in list_result.stdout.splitlines() if line.strip()]
+        # Keep only tag rows (exclude digest-only entries). NAME should be like <image>:<tag>
+        image_rows = [r for r in rows if r.startswith(f"{image_name_base}:") and ":" in r]
+        def parse_row(r):
+            parts = r.split(',')
+            return (parts[0], parts[1])
+        # Sort by create time desc
+        sorted_rows = sorted(image_rows, key=lambda r: parse_row(r)[1], reverse=True)
+        keep = sorted_rows[:3]
+        to_delete = sorted_rows[3:]
+        deleted = []
+        for r in to_delete:
+            name, _ = parse_row(r)
+            try:
+                print(f"Deleting old image tag: {name}")
+                del_cmd = ["gcloud", "artifacts", "docker", "images", "delete", name, "--quiet"]
+                subprocess.run(del_cmd, check=True)
+                deleted.append(name)
+            except subprocess.CalledProcessError:
+                pass
+        if deleted:
+            print("Deleted tags:")
+            for n in deleted:
+                print(f"  - {n}")
+        else:
+            print("No old image tags to delete (<= 3 present).")
+        # Return concise summary for Pulumi outputs
+        return f"deleted={len(deleted)} kept={len(keep)}"
+    except subprocess.CalledProcessError:
+        return "cleanup-skip"
 
 # Push the locally built Docker image after registry is created
 docker_image = artifact_registry_repo.name.apply(lambda _: push_local_image())
@@ -174,3 +221,7 @@ pulumi.export("service_name", run_service.name)
 pulumi.export("service_account_email", service_account.email)
 pulumi.export("registry_name", artifact_registry_repo.name)
 pulumi.export("region", region)
+
+# Run image cleanup after a successful deployment (depends on service URI materializing)
+cleanup_result = run_service.uri.apply(cleanup_old_images_after_deploy)
+pulumi.export("image_cleanup", cleanup_result)

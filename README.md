@@ -9,7 +9,15 @@ Journals are available to read for players themselves and admin (coach) could re
 
 ## Specs
 
-Java 17, Spring Boot 3.5.6, PostgreSQL 18, JdbcTemplate, LogBACK, OpenAPI (springdoc), telegram bot via webhook.
+Project was created mostly to refresh Java, Spring Boot, skills. Also it is a way to learn GraalVM native image compilation, newer Java versions, Pulumi, etc.
+
+Main technologies:
+- Java 21,
+- Spring Boot 3.5.6,
+- PostgreSQL 18,
+- GraalVM native image compilation
+- Pulumi
+- Google Cloud Run v2
 
 ## Features
 
@@ -24,9 +32,9 @@ After: If no then why?
 After: What you did good during todays session?
 After: What you would try to work on on next session?
 ```
-- Players answer on questions one-by-one, "before or after" information only makes 2 groups of questions, "before" questions for "/before" command, "after" questions for "/after" command. Flow is - run "/before" before the session, answer on questions one-by-one, at the end get something like "Done for now, good luck with the sesssion, run `/after` command once you finish it." from the bot and follow this instruction.
-- Players may see theirs journals for the last 5 sessions via `/last5` command. Each journal starts with date label, next question, colon, answer. `/last` command should return only the last journal. With `/history` command players should get all journals (could be a quite big sequience with message per 5 journals).
-- Admin may get list of players participating in journals with `/participants`. It should return list of telegram users sorted chronologically by last journal date. List items should be press-able. Each participant should be represented with telegram nickname, first and last name, last journal time, total number of journals. Press on participant should return 5 last journals.
+- Players answer on questions one-by-one, "before or after" information only makes 2 groups of questions, "before" questions for "/before" command, "after" questions for "/after" command. Flow is - run "/before" before the session, answer on questions one-by-one, at the end get something like "Done for now, good luck with the sesssion, run `/after` command once you finish it." from the bot and follow this instruction after the session.
+- Players may see theirs journals via `/last` command. Each journal starts with date label, next question, colon, answer. `/last5` command should return the last 5 journals. `/last50` command should return the last 50 journals.
+- Admin may get list of players participating in journals with `/participants`.
 
 # Setup
 
@@ -47,7 +55,9 @@ After: What you would try to work on on next session?
 
 ## 2. PostgreSQL Setup
 
-The application requires PostgreSQL to be installed and running.
+For development purposes project requires PostgreSQL to be installed and running.
+
+In production project uses Supabase database.
 
 ### Install and Start PostgreSQL
 
@@ -132,9 +142,7 @@ DB_PROD_SSL_PARAMS='?sslmode=require'
 
 **Note**: Python's Pulumi script uses `override=True` when loading the `.env` file, so it reads values directly from the file and ignores any Make-expanded environment variables.
 
-**Note**: The Pulumi deployment script reads `DB_PROD_*` variables (or falls back to `DB_*` for backward compatibility) from your `.env` file and sets them as `DB_*` environment variables in Cloud Run. This way:
-- **Local runs** use `DB_HOST=localhost` (local development)
-- **Production runs** use `DB_PROD_HOST` values (deployed to Cloud Run)
+**Note**: The Pulumi deployment script reads `DB_PROD_*` variables from your `.env` file and sets them as `DB_*` environment variables in Cloud Run.
 
 You can keep both configurations in the same `.env` file - local values for development, production values for deployment.
 
@@ -152,7 +160,7 @@ make db-test-prod
 This will:
 - Connect to your production database (Supabase)
 - Test the connection
-- Show database version if successful
+- Show database version and tables in the public schema
 
 **2. Run the application with production database:**
 ```bash
@@ -217,7 +225,7 @@ make check-webhook
 
 ## 4. Production Deployment
 
-For production, deploy your application to a server with a public domain and set the webhook on Telegram server side to avoid abusing by third parties.
+For production, deploy your application to Google Cloud Run v2 and set the webhook on Telegram server side to avoid abusing by third parties.
 
 ### Webhook Security
 
@@ -346,7 +354,7 @@ This project uses Pulumi to deploy to Google Cloud Run v2 with GraalVM native co
    source venv/bin/activate  # Activate venv if not already activated
    mkdir -p ../.pulumi-state
    pulumi login file://$(pwd)/../.pulumi-state
-   pulumi stack init dev || true
+   pulumi stack init dev
    ```
 
 3. **Deploy the infrastructure** (uses your local Docker image):
@@ -399,7 +407,7 @@ This will remove:
 - Artifact Registry repository and all Docker images
 - Service account and IAM bindings
 
-**Note**: All infrastructure is managed by Pulumi, so `pulumi destroy` will clean up everything, including the container registry and stored images.
+**Note**: All infrastructure is managed by Pulumi, so `pulumi destroy` will clean up everything.
 
 ## 5. Webhook Management
 
@@ -437,39 +445,16 @@ make delete-webhook
 - **API Documentation**: `GET /docs` - Swagger UI
 - **Webhook**: `POST /webhook` - Telegram webhook endpoint
 
-## 8. Makefile Commands
+## 8. DB Migrations
 
-The project includes a simplified Makefile for common development tasks:
+Liquibase or Flyway are too heavy/long solutions (they check schema on startup) so keep db migrations manual for now.
+When schema changes are introduced, a standalone SQL file is added to the [`manual_migrations`](manual_migrations) directory with the date in "YYYY_MM_DD.sql" format.
 
-### Development Commands
+How to apply a migration:
+
 ```bash
-make run               # Run the application (with local database)
-make run-prod          # Run the application with production database (uses DB_PROD_*)
-make test              # Run tests
-make test-coverage     # Run tests with coverage report
-make format            # Fix code formatting
-make clean             # Clean build artifacts
-make native-build      # Build GraalVM native image
-make native-run        # Run native image locally (with local database)
-make native-run-prod   # Run native image with production database (uses DB_PROD_*)
-```
-
-### Webhook Setup (Automated)
-```bash
-make set-local         # Start ngrok and set webhook automatically
-make set-prod          # Set production webhook (asks for URL)
-make check-webhook     # Check current webhook status
-make delete-webhook    # Delete webhook (stop receiving updates)
-```
-
-### Database Commands
-```bash
-make db-setup         # Set up PostgreSQL databases (creates if they don't exist)
-make db-status        # Check PostgreSQL connection and database status (local)
-make db-test-prod     # Test connection to production database (uses DB_PROD_* variables)
-make db-reset         # Reset database (drop and recreate, WARNING: deletes all data!)
-make db-backup        # Backup database to SQL file
-make db-restore       # Restore database from SQL backup file
+# Example for the existing migration.
+psql "$DB_NAME" -h "$DB_HOST" -U "$DB_USERNAME" -p "$DB_PORT" -f manual_migrations/2025_11_04.sql
 ```
 
 ### Health and Monitoring

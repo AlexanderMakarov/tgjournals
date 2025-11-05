@@ -1,30 +1,34 @@
 package com.aleksandrmakarov.journals.repository;
 
+import java.util.List;
+import java.util.Optional;
+
 import com.aleksandrmakarov.journals.model.Participant;
 import com.aleksandrmakarov.journals.model.StateType;
 import com.aleksandrmakarov.journals.model.User;
 import com.aleksandrmakarov.journals.model.UserRole;
-import java.util.List;
-import java.util.Optional;
 
 /** User repository interface. */
 public interface UserRepository {
 
-  Optional<User> findByTelegramId(Long telegramId);
+	Optional<User> findByTelegramId(Long telegramId);
 
-  Optional<User> findByUsername(String username);
+	Optional<User> findByUsername(String username);
 
-  List<User> findAllByRole(UserRole role);
+	List<User> findAllByRole(UserRole role);
 
-  void upsertState(Long userId, StateType stateType, Long sessionId, Integer questionIndex);
+	void upsertState(Long userId, StateType stateType, Long sessionId, Integer questionIndex);
 
-  void clearState(Long userId, boolean isClearQuestionIndex);
+	void upsertStateWithPayload(Long userId, StateType stateType, Long sessionId, Integer questionIndex,
+			String payload);
 
-  User save(User user);
+	void clearState(Long userId, boolean isClearQuestionIndex);
 
-  List<Participant> findParticipantsOrderedByLastJournal();
+	User save(User user);
 
-  long count();
+	List<Participant> findParticipantsOrderedByLastJournal();
 
-  void deleteAll();
+	long count();
+
+	void deleteAll();
 }

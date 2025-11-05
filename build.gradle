@@ -1,9 +1,9 @@
 plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.6'
-	id 'com.diffplug.spotless' version '6.25.0'
+	id 'com.diffplug.spotless' version '7.0.0'
 	id 'io.spring.dependency-management' version '1.1.6'
-	id 'org.graalvm.buildtools.native' version '0.10.1'
+    id 'org.graalvm.buildtools.native' version '0.10.3'
 	id 'jacoco'
 }
 
@@ -13,7 +13,7 @@ description = 'Journals TG bot'
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(project.hasProperty('javaVersion') ? project.javaVersion : 21)
+		languageVersion = JavaLanguageVersion.of(project.hasProperty('javaVersion') ? project.javaVersion : 25)
 	}
 }
 
@@ -28,18 +28,22 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.telegram:telegrambots-webhook:7.0.0'
 	implementation 'org.telegram:telegrambots-client:7.0.0'
 	implementation 'org.postgresql:postgresql:42.7.7'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
 	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
+	implementation 'org.springframework:spring-web'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'junit', module: 'junit'
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
 	testCompileOnly 'org.projectlombok:lombok'
 	testAnnotationProcessor 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -56,6 +60,192 @@ tasks.named('test') {
 	finalizedBy 'jacocoTestReport'
 	dependsOn = []
 	systemProperty 'spring.aot.enabled', 'false'
+
+    // Attach GraalVM agent to test when NOT using plugin's -Pagent, per Spring Boot docs
+    if (!project.hasProperty('agent')) {
+        def metadataDir = file("src/main/resources/META-INF/native-image/com.aleksandrmakarov/tg-journals")
+        metadataDir.mkdirs()
+        jvmArgs "-agentlib:native-image-agent=config-merge-dir=${metadataDir},access-filter-file=${projectDir}/access-filter.json"
+        // Reduce flakiness under instrumentation
+        systemProperty 'spring.test.context.cache.maxSize', '0'
+        systemProperty 'junit.jupiter.execution.parallel.enabled', 'false'
+    }
+}
+
+// Run the test suite with GraalVM native-image agent to generate/merge hints
+tasks.register('testWithNativeHints', Test) {
+    description = 'Run tests with GraalVM native-image agent to generate native hints'
+    group = 'verification'
+
+    useJUnitPlatform()
+    
+    // Run sequentially to avoid agent issues across parallel forks
+    maxParallelForks = 1
+    forkEvery = 1
+    
+    // Tests must pass - no failures allowed
+    ignoreFailures = false
+
+    // Ensure test profile and disable AOT
+    systemProperty 'spring.profiles.active', 'test'
+    // Keep AOT OFF; we rely on the GraalVM agent, not Spring AOT codegen
+    systemProperty 'spring.aot.enabled', 'false'
+    
+    // Set Spring test context cache to minimum (1) - agent interferes with larger cache
+    // Cannot use 0 as Spring requires maxSize >= 1
+    systemProperty 'spring.test.context.cache.maxSize', '1'
+    
+    // Disable parallel stream operations that can break under agent instrumentation
+    systemProperty 'java.util.concurrent.ForkJoinPool.common.parallelism', '1'
+    
+    // Disable JUnit parallel execution
+    systemProperty 'junit.jupiter.execution.parallel.enabled', 'false'
+
+    // Use build directory for agent output to avoid lock conflicts with multiple test executors
+    // Then merge into the metadata dir the app uses
+    def agentOutputDir = file("${buildDir}/native/agent-output/testWithNativeHints")
+    def metadataDir = file("src/main/resources/META-INF/native-image/com.aleksandrmakarov/tg-journals")
+    metadataDir.mkdirs()
+    agentOutputDir.mkdirs()
+
+    // Find java from PATH at configuration time
+    def whichCommand = System.getProperty('os.name').toLowerCase().contains('windows') ? 'where' : 'which'
+    def whichProcess = new ProcessBuilder(whichCommand, 'java')
+        .redirectErrorStream(true)
+        .start()
+    def whichOutput = new StringBuilder()
+    whichProcess.inputStream.eachLine { line -> whichOutput.append(line).append('\n') }
+    def exitCode = whichProcess.waitFor()
+    
+    if (exitCode != 0 || whichOutput.toString().trim().isEmpty()) {
+        throw new GradleException("""
+            ❌ Error: 'java' command not found in PATH.
+            
+            Please ensure GraalVM is installed and 'java' is available in your PATH.
+        """.stripIndent())
+    }
+    
+    def javaPath = whichOutput.toString().trim()
+    executable = javaPath
+
+    // Attach Graal agent from GraalVM - configure to work with JUnit
+    // Use config-merge-dir so multiple test executors can write to same directory
+    // Use experimental-class-define-support to handle class initialization better
+    jvmArgs "-agentlib:native-image-agent=config-merge-dir=${agentOutputDir},experimental-class-define-support=true"
+    
+    // Allow access to internal packages that test frameworks might need
+    // --add-opens: allows deep reflection access (for reflective access)
+    jvmArgs "--add-opens=java.base/java.lang=ALL-UNNAMED"
+    jvmArgs "--add-opens=java.base/java.util=ALL-UNNAMED"
+    jvmArgs "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+    jvmArgs "--add-opens=java.base/jdk.internal.reflect=ALL-UNNAMED"
+    jvmArgs "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED"
+    // sun.misc is in jdk.unsupported module (JEP 498), not java.base
+    jvmArgs "--add-opens=jdk.unsupported/sun.misc=ALL-UNNAMED"
+    jvmArgs "--add-opens=jdk.unsupported/sun.reflect=ALL-UNNAMED"
+    // --add-exports: makes the package available to other modules (for compilation/runtime access)
+    jvmArgs "--add-exports=jdk.unsupported/sun.misc=ALL-UNNAMED"
+    jvmArgs "--add-exports=jdk.unsupported/sun.reflect=ALL-UNNAMED"
+
+    doFirst {
+        println 'Running tests with GraalVM native-image agent to generate hints...'
+        
+        // Verify java from PATH is GraalVM
+        def javaProcess = new ProcessBuilder(javaPath, '-version')
+            .redirectErrorStream(true)
+            .start()
+        def javaVersionOutput = new StringBuilder()
+        javaProcess.inputStream.eachLine { line -> javaVersionOutput.append(line).append('\n') }
+        javaProcess.waitFor()
+        
+        def javaVersionText = javaVersionOutput.toString()
+        def isGraalVM = javaVersionText.contains('GraalVM') || javaVersionText.contains('graalvm')
+        
+        if (!isGraalVM) {
+            throw new GradleException("""
+                ❌ Error: The default 'java' command is not GraalVM.
+                
+                Current java version output:
+                ${javaVersionText}
+                
+                Please ensure GraalVM is installed and configured as the default java.
+                The native-image-agent requires GraalVM JDK to run.
+            """.stripIndent())
+        }
+        
+        // Check if native-image-agent is available by trying to get java home
+        def javaHomeProcess = new ProcessBuilder(javaPath, '-XshowSettings:properties', '-version')
+            .redirectErrorStream(true)
+            .start()
+        def javaHomeOutput = new StringBuilder()
+        javaHomeProcess.inputStream.eachLine { line -> javaHomeOutput.append(line).append('\n') }
+        javaHomeProcess.waitFor()
+        
+        def javaHomeMatch = javaHomeOutput.toString() =~ /java\.home\s*=\s*(.+)/
+        if (javaHomeMatch) {
+            def javaHome = javaHomeMatch.group(1).trim()
+            def agentLib = new File(javaHome, 'lib/libnative-image-agent.so')
+            def agentLibMac = new File(javaHome, 'lib/libnative-image-agent.dylib')
+            def agentLibWin = new File(javaHome, 'bin/native-image-agent.dll')
+            
+            if (!agentLib.exists() && !agentLibMac.exists() && !agentLibWin.exists()) {
+                throw new GradleException("""
+                    ❌ Error: native-image-agent not found in GraalVM installation.
+                    
+                    Expected location: ${javaHome}/lib/libnative-image-agent.so (Linux)
+                    Or: ${javaHome}/lib/libnative-image-agent.dylib (macOS)
+                    Or: ${javaHome}/bin/native-image-agent.dll (Windows)
+                    
+                    Please ensure GraalVM is fully installed with native-image component.
+                """.stripIndent())
+            }
+        }
+        
+        println "✓ Verified GraalVM java from PATH: ${javaPath}"
+        println "Writing hints to: ${agentOutputDir}"
+        println "Will merge into: ${metadataDir}"
+    }
+    doLast {
+        println ''
+        // Merge agent output into metadata directory
+        if (agentOutputDir.exists() && agentOutputDir.listFiles()) {
+            copy {
+                from agentOutputDir
+                into metadataDir
+                include '**/*.json'
+            }
+            println "✅ Test-driven native image hints generated and merged into: ${metadataDir}"
+        } else {
+            println "⚠️  No agent output found in: ${agentOutputDir}"
+        }
+    }
+}
+
+// Run the app (test profile) with GraalVM native-image agent
+tasks.register('runServerWithHints', JavaExec) {
+    description = 'Run server with GraalVM native-image agent (test profile)'
+    group = 'native'
+
+    dependsOn 'bootJar'
+    classpath = files(tasks.bootJar.get().archiveFile)
+    mainClass = 'org.springframework.boot.loader.launch.JarLauncher'
+
+    // Locate java from PATH
+    def whichCommand = System.getProperty('os.name').toLowerCase().contains('windows') ? 'where' : 'which'
+    def whichProcess = new ProcessBuilder(whichCommand, 'java').redirectErrorStream(true).start()
+    def whichOutput = new StringBuilder()
+    whichProcess.inputStream.eachLine { line -> whichOutput.append(line).append('\n') }
+    if (whichProcess.waitFor() != 0 || whichOutput.toString().trim().isEmpty()) {
+        throw new GradleException("java not found in PATH")
+    }
+    executable = whichOutput.toString().trim()
+
+    // Agent and profile
+    def metadataDir = file("src/main/resources/META-INF/native-image/com.aleksandrmakarov/tg-journals")
+    metadataDir.mkdirs()
+    jvmArgs "-agentlib:native-image-agent=config-merge-dir=${metadataDir}",
+            "-Dspring.profiles.active=test",
+            "-Dspring.aot.enabled=false"
 }
 
 // Prevent bootRun task from being up-to-date ever.
@@ -66,7 +256,8 @@ tasks.named('bootRun') {
 // Spotless configuration for code formatting
 spotless {
 	java {
-		googleJavaFormat('1.19.2')
+        target 'src/main/java/**/*.java'
+        eclipse('4.33')
 		removeUnusedImports()
 		trimTrailingWhitespace()
 		endWithNewline()
@@ -114,48 +305,6 @@ tasks.register('printCoverage') {
 	}
 }
 
-// Task to generate native image hints using the GraalVM tracing agent
-task generateNativeHints(type: JavaExec) {
-	description = 'Generate native image hints using GraalVM tracing agent'
-	group = 'native'
-
-	dependsOn 'bootJar'
-
-	classpath = files(tasks.bootJar.archiveFile)
-	mainClass = 'org.springframework.boot.loader.launch.JarLauncher'
-
-	def metadataDir = file("src/main/resources/META-INF/native-image/com.aleksandrmakarov/tg-journals")
-	metadataDir.mkdirs()
-
-	// Set LD_LIBRARY_PATH to include GraalVM lib directory for native-image-agent
-	def javaHome = System.getProperty("java.home")
-	environment "LD_LIBRARY_PATH", "${javaHome}/lib"
-
-	jvmArgs = [
-		"-agentlib:native-image-agent=config-merge-dir=${metadataDir}"
-	]
-
-	// Set a timeout so the app doesn't run forever
-	doFirst {
-		println "Starting application with tracing agent..."
-		println "The app will run for 30 seconds. Please trigger your API endpoints during this time."
-		println "Press Ctrl+C to stop earlier."
-	}
-
-	doLast {
-		println ""
-		println "Native image hints generated/updated in: ${metadataDir}"
-		println "Review the generated files and rebuild the native image."
-	}
-}
-
-// Make nativeCompile depend on hint generation in development
-if (System.getenv('AUTO_GENERATE_HINTS') == 'true') {
-	tasks.named('processAot') {
-		dependsOn 'generateNativeHints'
-	}
-}
-
 // Disable AOT processing for tests to improve test performance
 tasks.matching { it.name.startsWith('processTestAot') }.configureEach {
 	enabled = false
@@ -163,7 +312,7 @@ tasks.matching { it.name.startsWith('processTestAot') }.configureEach {
 
 // GraalVM Native Image configuration
 graalvmNative {
-	binaries {
+    binaries {
 		main {
 			// Core framework initialization - package-level approach
 			buildArgs.add('--initialize-at-build-time=org.springframework')
@@ -225,6 +374,27 @@ graalvmNative {
 			if (System.getenv('STATIC_BUILD') == 'true') {
 				buildArgs.add('--enable-native-access=ALL-UNNAMED')
 			}
+		// Ensure javaLauncher is available for plugin internals (agent/native tasks)
+		all {
+			javaLauncher.set(javaToolchains.launcherFor {
+				languageVersion.set(JavaLanguageVersion.of(project.hasProperty('javaVersion') ? project.javaVersion : 25))
+			})
 		}
+		}
+	}
+}
+
+// Copy agent output into the application's metadata directory for native-image builds
+tasks.register('mergeNativeAgentOutput', Copy) {
+	group = 'native'
+	description = 'Merge GraalVM agent output from build/native/agent-output/test into project metadata dir'
+	def agentOut = file("$buildDir/native/agent-output/test")
+	def metadataDir = file("src/main/resources/META-INF/native-image/com.aleksandrmakarov/tg-journals")
+	dependsOn tasks.named('test')
+	from(agentOut)
+	include '**/*.json'
+	into(metadataDir)
+	doFirst {
+		metadataDir.mkdirs()
 	}
 }

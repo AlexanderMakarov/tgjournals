@@ -8,15 +8,13 @@ import org.springframework.context.support.ReloadableResourceBundleMessageSource
 @Configuration(proxyBeanMethods = false)
 public class I18nConfig {
 
-  @Bean
-  public MessageSource messageSource() {
-    ReloadableResourceBundleMessageSource messageSource =
-        new ReloadableResourceBundleMessageSource();
-    messageSource.setBasename("classpath:messages");
-    messageSource.setDefaultEncoding("UTF-8");
-    messageSource.setFallbackToSystemLocale(false);
-    messageSource.setCacheSeconds(3600);
-    return messageSource;
-  }
+	@Bean
+	public MessageSource messageSource() {
+		ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
+		messageSource.setBasename("classpath:messages");
+		messageSource.setDefaultEncoding("UTF-8");
+		messageSource.setFallbackToSystemLocale(false);
+		messageSource.setCacheSeconds(3600);
+		return messageSource;
+	}
 }
-

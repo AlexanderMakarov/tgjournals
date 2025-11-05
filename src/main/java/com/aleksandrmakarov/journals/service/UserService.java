@@ -1,31 +1,31 @@
 package com.aleksandrmakarov.journals.service;
 
+import java.util.List;
+
 import com.aleksandrmakarov.journals.model.Participant;
 import com.aleksandrmakarov.journals.model.User;
 import com.aleksandrmakarov.journals.model.UserRole;
-import java.util.List;
 
 /** User service interface. */
 public interface UserService {
 
-  User findOrCreateUser(Long telegramId, String username, String firstName, String lastName);
+	User findOrCreateUser(Long telegramId, String username, String firstName, String lastName);
 
-  User findUserByTelegramId(Long telegramId);
+	User findUserByUsername(String username);
 
-  User findUserByUsername(String username);
+	List<User> getAdmins();
 
-  List<User> getAdmins();
+	List<Participant> getParticipantsOrderedByLastJournal();
 
-  List<Participant> getParticipantsOrderedByLastJournal();
+	void changeRole(User user, UserRole newRole);
 
-  void changeRole(User user, UserRole newRole);
+	User findOrCreateUserWithRole(Long telegramId, String username, String firstName, String lastName, UserRole role);
 
-  User findOrCreateUserWithRole(
-      Long telegramId, String username, String firstName, String lastName, UserRole role);
+	void setQuestionFlowState(Long userId, Long sessionId, int questionIndex);
 
-  void setQuestionFlowState(Long userId, Long sessionId, int questionIndex);
+	void setQuestionsUpdateMode(Long userId, Long sessionId);
 
-  void setQuestionsUpdateMode(Long userId, Long sessionId);
+	void clearUserState(Long userId, boolean isClearQuestionIndex);
 
-  void clearUserState(Long userId, boolean isClearQuestionIndex);
+	void setParticipantSelectState(Long userId, String payload, int pageIndex);
 }

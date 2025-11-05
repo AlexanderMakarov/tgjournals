@@ -18,153 +18,97 @@ import com.aleksandrmakarov.journals.repository.UserRepository;
 @Transactional
 public class UserServiceImpl implements UserService {
 
-  @Autowired private UserRepository userRepository;
+	@Autowired
+	private UserRepository userRepository;
 
-  @Override
-  public User findOrCreateUser(
-      Long telegramId, String username, String firstName, String lastName) {
-    Optional<User> existingUser = userRepository.findByTelegramId(telegramId);
-    if (existingUser.isPresent()) {
-      User user = existingUser.get();
-      // Update user info if changed.
-      if (username != null && !username.equals(user.username())
-          || firstName != null && !firstName.equals(user.firstName())
-          || lastName != null && !lastName.equals(user.lastName())) {
-        User updatedUser =
-            new User(
-                user.id(),
-                user.telegramId(),
-                username,
-                firstName,
-                lastName,
-                user.role(),
-                user.createdAt(),
-                user.stateType(),
-                user.stateSessionId(),
-                user.stateQuestionIndex(),
-                user.stateUpdatedAt());
-        return userRepository.save(updatedUser);
-      }
-      return user;
-    } else {
-      // Create new user as a player.
-      User newUser =
-          new User(
-              null,
-              telegramId,
-              username,
-              firstName,
-              lastName,
-              UserRole.PLAYER,
-              LocalDateTime.now(),
-              null,
-              null,
-              0,
-              null);
-      return userRepository.save(newUser);
-    }
-  }
+	@Override
+	public User findOrCreateUser(Long telegramId, String username, String firstName, String lastName) {
+		Optional<User> existingUser = userRepository.findByTelegramId(telegramId);
+		if (existingUser.isPresent()) {
+			User user = existingUser.get();
+			// Update user info if changed.
+			if (username != null && !username.equals(user.username())
+					|| firstName != null && !firstName.equals(user.firstName())
+					|| lastName != null && !lastName.equals(user.lastName())) {
+				User updatedUser = new User(user.id(), user.telegramId(), username, firstName, lastName, user.role(),
+						user.createdAt(), user.stateType(), user.stateSessionId(), user.stateQuestionIndex(),
+						user.stateUpdatedAt(), user.statePayload());
+				return userRepository.save(updatedUser);
+			}
+			return user;
+		} else {
+			// Create new user as a player.
+			User newUser = new User(null, telegramId, username, firstName, lastName, UserRole.PLAYER,
+					LocalDateTime.now(), null, null, 0, null, null);
+			return userRepository.save(newUser);
+		}
+	}
 
-  @Override
-  public User findUserByTelegramId(Long telegramId) {
-    return userRepository.findByTelegramId(telegramId).orElse(null);
-  }
+	@Override
+	public User findUserByUsername(String username) {
+		return userRepository.findByUsername(username).orElse(null);
+	}
 
-  @Override
-  public User findUserByUsername(String username) {
-    return userRepository.findByUsername(username).orElse(null);
-  }
+	@Override
+	public List<User> getAdmins() {
+		return userRepository.findAllByRole(UserRole.ADMIN);
+	}
 
-  @Override
-  public List<User> getAdmins() {
-    return userRepository.findAllByRole(UserRole.ADMIN);
-  }
+	@Override
+	public List<Participant> getParticipantsOrderedByLastJournal() {
+		return userRepository.findParticipantsOrderedByLastJournal();
+	}
 
-  @Override
-  public List<Participant> getParticipantsOrderedByLastJournal() {
-    return userRepository.findParticipantsOrderedByLastJournal();
-  }
+	@Override
+	public void changeRole(User user, UserRole newRole) {
+		if (user != null) {
+			User updatedUser = new User(user.id(), user.telegramId(), user.username(), user.firstName(),
+					user.lastName(), newRole, user.createdAt(), user.stateType(), user.stateSessionId(),
+					user.stateQuestionIndex(), user.stateUpdatedAt(), user.statePayload());
+			userRepository.save(updatedUser);
+		}
+	}
 
-  @Override
-  public void changeRole(User user, UserRole newRole) {
-    if (user != null) {
-      User updatedUser =
-          new User(
-              user.id(),
-              user.telegramId(),
-              user.username(),
-              user.firstName(),
-              user.lastName(),
-              newRole,
-              user.createdAt(),
-              user.stateType(),
-              user.stateSessionId(),
-              user.stateQuestionIndex(),
-              user.stateUpdatedAt());
-      userRepository.save(updatedUser);
-    }
-  }
+	@Override
+	public User findOrCreateUserWithRole(Long telegramId, String username, String firstName, String lastName,
+			UserRole role) {
+		Optional<User> existingUser = userRepository.findByTelegramId(telegramId);
+		if (existingUser.isPresent()) {
+			User user = existingUser.get();
+			// Update user info and role if changed
+			if (!username.equals(user.username()) || !firstName.equals(user.firstName())
+					|| !lastName.equals(user.lastName()) || !role.equals(user.role())) {
+				User updatedUser = new User(user.id(), user.telegramId(), username, firstName, lastName, role,
+						user.createdAt(), user.stateType(), user.stateSessionId(), user.stateQuestionIndex(),
+						user.stateUpdatedAt(), user.statePayload());
+				return userRepository.save(updatedUser);
+			}
+			return user;
+		} else {
+			// Create new user with specified role
+			User newUser = new User(null, telegramId, username, firstName, lastName, role, LocalDateTime.now(), null,
+					null, 0, null, null);
+			return userRepository.save(newUser);
+		}
+	}
 
-  @Override
-  public User findOrCreateUserWithRole(
-      Long telegramId, String username, String firstName, String lastName, UserRole role) {
-    Optional<User> existingUser = userRepository.findByTelegramId(telegramId);
-    if (existingUser.isPresent()) {
-      User user = existingUser.get();
-      // Update user info and role if changed
-      if (!username.equals(user.username())
-          || !firstName.equals(user.firstName())
-          || !lastName.equals(user.lastName())
-          || !role.equals(user.role())) {
-        User updatedUser =
-            new User(
-                user.id(),
-                user.telegramId(),
-                username,
-                firstName,
-                lastName,
-                role,
-                user.createdAt(),
-                user.stateType(),
-                user.stateSessionId(),
-                user.stateQuestionIndex(),
-                user.stateUpdatedAt());
-        return userRepository.save(updatedUser);
-      }
-      return user;
-    } else {
-      // Create new user with specified role
-      User newUser =
-          new User(
-              null,
-              telegramId,
-              username,
-              firstName,
-              lastName,
-              role,
-              LocalDateTime.now(),
-              null,
-              null,
-              0,
-              null);
-      return userRepository.save(newUser);
-    }
-  }
+	@Override
+	public void setQuestionFlowState(Long userId, Long sessionId, int questionIndex) {
+		userRepository.upsertState(userId, StateType.QA_FLOW, sessionId, questionIndex);
+	}
 
-  // --------------- User state operations moved here ---------------
+	@Override
+	public void setQuestionsUpdateMode(Long userId, Long sessionId) {
+		userRepository.upsertState(userId, StateType.QUESTIONS_UPDATE, sessionId, -1);
+	}
 
-  @Override
-  public void setQuestionFlowState(Long userId, Long sessionId, int questionIndex) {
-    userRepository.upsertState(userId, StateType.QA_FLOW, sessionId, questionIndex);
-  }
+	@Override
+	public void clearUserState(Long userId, boolean isClearQuestionIndex) {
+		userRepository.clearState(userId, isClearQuestionIndex);
+	}
 
-  @Override
-  public void setQuestionsUpdateMode(Long userId, Long sessionId) {
-    userRepository.upsertState(userId, StateType.QUESTIONS_UPDATE, sessionId, -1);
-  }
-
-  @Override
-  public void clearUserState(Long userId, boolean isClearQuestionIndex) {
-    userRepository.clearState(userId, isClearQuestionIndex);
-  }
+	@Override
+	public void setParticipantSelectState(Long userId, String payload, int pageIndex) {
+		userRepository.upsertStateWithPayload(userId, StateType.PARTICIPANT_SELECT, null, pageIndex, payload);
+	}
 }

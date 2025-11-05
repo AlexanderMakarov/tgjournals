@@ -9,11 +9,11 @@ import java.util.List;
 /** Journal service interface. */
 public interface JournalService {
 
-  Journal saveJournal(String answer, User user, Session session, Question question);
+	Journal saveJournal(String answer, User user, Session session, Question question);
 
-  List<Journal> getUserJournals(User user, int limit);
+	List<Journal> getUserJournals(User user, int limit);
 
-  List<Journal> getUserJournalsForSession(User user, Session session);
+	List<Journal> getUserJournalsForSession(User user, Session session);
 
-  Long getUserJournalCount(User user);
+	Long getUserJournalCount(User user);
 }

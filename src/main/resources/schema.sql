@@ -7,10 +7,11 @@ CREATE TABLE IF NOT EXISTS users (
     last_name TEXT,
     role TEXT NOT NULL CHECK (role IN ('ADMIN', 'PLAYER', 'BANNED')),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    state_type TEXT CHECK (state_type IN ('QA_FLOW', 'SESSION_CREATE_PENDING', 'QUESTIONS_UPDATE')),
+    state_type TEXT,
     state_session_id BIGINT,
     state_question_index INTEGER NOT NULL DEFAULT 0,
-    state_updated_at TIMESTAMP
+    state_updated_at TIMESTAMP,
+    state_payload TEXT
 );
 
 -- Sessions table
@@ -41,7 +42,8 @@ CREATE TABLE IF NOT EXISTS journals (
     question_id BIGINT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
-    FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+    FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE,
+    UNIQUE (user_id, session_id, question_id)
 );
 
 

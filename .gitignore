@@ -42,3 +42,6 @@ test-journals.db*
 .pulumi-state/
 pulumi/venv/
 **/*.pyc
+
+### Native image ###
+src/main/resources/META-INF/native-image/com.aleksandrmakarov/tg-journals/agent-extracted-predefined-classes/**

@@ -7,15 +7,15 @@ import java.util.Optional;
 /** Session repository interface. */
 public interface SessionRepository {
 
-  Optional<Session> findActiveSession();
+	Optional<Session> findActiveSession();
 
-  Session save(Session session);
+	Session save(Session session);
 
-  void finishAllActiveSessions();
+	void finishAllActiveSessions();
 
-  long count();
+	long count();
 
-  List<Session> findFinishedSessionsOrderedByCreatedAt();
+	List<Session> findFinishedSessionsOrderedByCreatedAt();
 
-  void deleteAll();
+	void deleteAll();
 }

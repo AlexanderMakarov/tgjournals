@@ -1,24 +1,27 @@
 package com.aleksandrmakarov.journals.repository;
 
+import java.util.List;
+
 import com.aleksandrmakarov.journals.model.Journal;
 import com.aleksandrmakarov.journals.model.SessionJournals;
-import java.util.List;
 
 /** Journal repository interface. */
 public interface JournalRepository {
-  Journal save(Journal journal);
+	Journal save(Journal journal);
 
-  List<Long> saveBatch(List<Journal> journals);
+	Journal upsertJournal(String answer, Long userId, Long sessionId, Long questionId);
 
-  List<Journal> findByUserIdOrderByCreatedAtDesc(Long userId, int limit);
+	List<Long> saveBatch(List<Journal> journals);
 
-  List<Journal> findByUserIdAndSessionIdOrderByCreatedAtDesc(Long userId, Long sessionId);
+	List<Journal> findByUserIdOrderByCreatedAtDesc(Long userId, int limit);
 
-  List<SessionJournals> findLastNJournalsPerUser(Long userId, int limitLastSessions);
+	List<Journal> findByUserIdAndSessionIdOrderByCreatedAtDesc(Long userId, Long sessionId);
 
-  Long countByUserId(Long userId);
+	List<SessionJournals> findLastNJournalsPerUser(Long userId, int limitLastSessions);
 
-  long count();
+	Long countByUserId(Long userId);
 
-  void deleteAll();
+	long count();
+
+	void deleteAll();
 }

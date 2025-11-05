@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.telegram.telegrambots.meta.api.methods.botapimethods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 /**
  * Test Journals Bot for integration testing. This bot captures the last response instead of sending
@@ -13,6 +14,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 @Configuration
 public class TestJournalsBot extends com.aleksandrmakarov.journals.bot.JournalsBot {
   private String lastResponse;
+  private InlineKeyboardMarkup lastInlineKeyboard;
 
   public TestJournalsBot(String botToken, String botUsername, String webhookPath) {
     super(botToken, botUsername, webhookPath);
@@ -23,11 +25,21 @@ public class TestJournalsBot extends com.aleksandrmakarov.journals.bot.JournalsB
     // Capture the response instead of sending to Telegram
     if (method instanceof SendMessage sendMessage) {
       lastResponse = sendMessage.getText();
+      var replyMarkup = sendMessage.getReplyMarkup();
+      if (replyMarkup instanceof InlineKeyboardMarkup inlineKeyboard) {
+        lastInlineKeyboard = inlineKeyboard;
+      } else {
+        lastInlineKeyboard = null;
+      }
     }
   }
 
   public String getLastResponse() {
     return lastResponse;
+  }
+
+  public InlineKeyboardMarkup getLastInlineKeyboard() {
+    return lastInlineKeyboard;
   }
 
   @Bean
