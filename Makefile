@@ -89,7 +89,12 @@ set-local: ## Start ngrok, set webhook automatically for local development
 .PHONY: set-prod
 set-prod: ## Set webhook for production (asks for URL)
 	@echo "Setting webhook for production..."
-	@read -p "Enter your production webhook URL (e.g., https://yourdomain.com): " url; \
+	@if [ -z "$(GCP_SERVICE_URL)" ]; then \
+		read -p "Enter your production webhook URL (e.g., https://yourdomain.com): " url; \
+	else \
+		url="$(GCP_SERVICE_URL)"; \
+		echo "Using GCP_SERVICE_URL: $$url"; \
+	fi; \
 	if [ -z "$$url" ]; then \
 		echo "Error: URL is required"; \
 		exit 1; \
@@ -104,13 +109,13 @@ set-prod: ## Set webhook for production (asks for URL)
 		-d "{\"url\": \"$$url/webhook\", \"secret_token\": \"$(TELEGRAM_WEBHOOK_SECRET)\"}"; \
 	echo "Webhook set successfully!"
 
-.PHONY: check-webhook
-check-webhook: ## Check current webhook status
+.PHONY: webhook-check
+webhook-check: ## Check current webhook status
 	@echo "Checking webhook status..."
 	@curl -s "https://api.telegram.org/bot$(TELEGRAM_BOT_TOKEN)/getWebhookInfo" | jq .
 
-.PHONY: delete-webhook
-delete-webhook: ## Delete webhook (stop receiving updates)
+.PHONY: webhook-delete
+webhook-delete: webhook-check ## Delete webhook (stop receiving updates)
 	@echo "Deleting webhook..."
 	@curl -X POST "https://api.telegram.org/bot$(TELEGRAM_BOT_TOKEN)/deleteWebhook"
 	@echo ""
@@ -367,6 +372,6 @@ deploy: docker-build gcp-deploy ## Rebuild Docker image (includes native image) 
 	@echo "💡 Note: If you've added new reflection/resource access patterns,"
 	@echo "   run 'make test-update-native-hints' first, commit the updated hints, then deploy again."
 
-.PHONY: full-deploy
+.PHONY: deploy-with-hints
 deploy-with-hints: test-update-native-hints docker-build gcp-deploy ## Complete deployment pipeline.
 	@echo "✅ Full deployment pipeline completed!"
