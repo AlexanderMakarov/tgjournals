@@ -23,6 +23,12 @@ configurations {
 	}
 }
 
+// Ensure all Java compilation includes full debug info (lines, vars, source)
+tasks.withType(JavaCompile).configureEach {
+	options.debug = true
+	options.debugOptions.debugLevel = 'source,lines,vars'
+}
+
 repositories {
 	mavenCentral()
 }
@@ -54,6 +60,14 @@ configurations.all {
 	exclude group: 'commons-logging', module: 'commons-logging'
 }
 
+// Exclude agent-extracted-predefined-classes and predefined-classes-config.json from JAR
+// These are build artifacts from test execution, not runtime resources
+// predefined-classes-config.json references test framework classes that aren't needed in native image
+tasks.named('processResources') {
+	exclude '**/META-INF/native-image/**/agent-extracted-predefined-classes/**'
+	exclude '**/META-INF/native-image/**/predefined-classes-config.json'
+}
+
 // Add coverage report to test task.
 tasks.named('test') {
 	useJUnitPlatform()
@@ -65,9 +79,9 @@ tasks.named('test') {
     if (!project.hasProperty('agent')) {
         def metadataDir = file("src/main/resources/META-INF/native-image/com.aleksandrmakarov/tg-journals")
         metadataDir.mkdirs()
-        jvmArgs "-agentlib:native-image-agent=config-merge-dir=${metadataDir},access-filter-file=${projectDir}/access-filter.json"
+        jvmArgs "-agentlib:native-image-agent=config-merge-dir=${metadataDir}"
         // Reduce flakiness under instrumentation
-        systemProperty 'spring.test.context.cache.maxSize', '0'
+        systemProperty 'spring.test.context.cache.maxSize', '1'
         systemProperty 'junit.jupiter.execution.parallel.enabled', 'false'
     }
 }
@@ -208,11 +222,15 @@ tasks.register('testWithNativeHints', Test) {
     doLast {
         println ''
         // Merge agent output into metadata directory
+        // Only copy JSON files, exclude .classdata files (agent-extracted-predefined-classes)
+        // Exclude predefined-classes-config.json as it references test framework classes
         if (agentOutputDir.exists() && agentOutputDir.listFiles()) {
             copy {
                 from agentOutputDir
                 into metadataDir
                 include '**/*.json'
+                exclude '**/agent-extracted-predefined-classes/**'
+                exclude '**/predefined-classes-config.json'
             }
             println "✅ Test-driven native image hints generated and merged into: ${metadataDir}"
         } else {
@@ -393,6 +411,8 @@ tasks.register('mergeNativeAgentOutput', Copy) {
 	dependsOn tasks.named('test')
 	from(agentOut)
 	include '**/*.json'
+	exclude '**/agent-extracted-predefined-classes/**'
+	exclude '**/predefined-classes-config.json'
 	into(metadataDir)
 	doFirst {
 		metadataDir.mkdirs()

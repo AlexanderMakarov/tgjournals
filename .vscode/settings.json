@@ -5,15 +5,11 @@
   "java.import.gradle.enabled": true,
   "java.import.gradle.wrapper.enabled": true,
   "java.import.gradle.offline.enabled": false,
+  "java.debug.settings.justMyCode": false,
+  "java.dependency.downloadSources": true,
+  "java.dependency.downloadJavadoc": true,
   "java.test.config": {
     "workingDirectory": "${workspaceFolder}"
   },
-  "java.test.defaultConfig": "",
-  "java.test.jdt.ls": {
-    "enabled": true
-  },
-  "gradle.javaDebug": {
-    "tasks": ["bootRun"],
-    "clean": false
-  }
+  "java.test.defaultConfig": ""
 }

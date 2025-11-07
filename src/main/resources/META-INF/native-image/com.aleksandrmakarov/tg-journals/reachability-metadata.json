@@ -7,6 +7,10 @@
       "type": "boolean[]"
     },
     {
+      "type": "byte[]",
+      "serializable": true
+    },
+    {
       "type": "ch.qos.logback.classic.BasicConfigurator",
       "methods": [
         {
@@ -272,6 +276,9 @@
           "name": "journalRepository"
         },
         {
+          "name": "objectMapper"
+        },
+        {
           "name": "questionRepository"
         },
         {
@@ -309,6 +316,10 @@
           "parameterTypes": []
         },
         {
+          "name": "test_apiResponseDeserialization_triggersReflectionHints",
+          "parameterTypes": []
+        },
+        {
           "name": "test_banAndUnban_userJournalsPersist",
           "parameterTypes": []
         },
@@ -322,6 +333,10 @@
         },
         {
           "name": "test_help_player",
+          "parameterTypes": []
+        },
+        {
+          "name": "test_jsonDeserialization_triggersBuilderMethods",
           "parameterTypes": []
         },
         {
@@ -354,6 +369,10 @@
         },
         {
           "name": "test_participants_twoParticipantsWithJournals",
+          "parameterTypes": []
+        },
+        {
+          "name": "test_sendMessageSerialization_triggersReflectionHints",
           "parameterTypes": []
         },
         {
@@ -874,7 +893,23 @@
       "type": "com.fasterxml.jackson.annotation.JsonInclude$Include"
     },
     {
+      "type": "com.fasterxml.jackson.core.JacksonException",
+      "serializable": true
+    },
+    {
       "type": "com.fasterxml.jackson.core.JsonGenerator"
+    },
+    {
+      "type": "com.fasterxml.jackson.core.JsonLocation",
+      "serializable": true
+    },
+    {
+      "type": "com.fasterxml.jackson.core.JsonParseException",
+      "serializable": true
+    },
+    {
+      "type": "com.fasterxml.jackson.core.JsonProcessingException",
+      "serializable": true
     },
     {
       "type": "com.fasterxml.jackson.core.ObjectCodec"
@@ -886,7 +921,27 @@
       "type": "com.fasterxml.jackson.core.Versioned"
     },
     {
+      "type": "com.fasterxml.jackson.core.exc.StreamReadException",
+      "serializable": true
+    },
+    {
+      "type": "com.fasterxml.jackson.core.io.ContentReference",
+      "serializable": true
+    },
+    {
+      "type": "com.fasterxml.jackson.databind.DatabindException",
+      "serializable": true
+    },
+    {
       "type": "com.fasterxml.jackson.databind.JsonDeserializer"
+    },
+    {
+      "type": "com.fasterxml.jackson.databind.JsonMappingException",
+      "serializable": true
+    },
+    {
+      "type": "com.fasterxml.jackson.databind.JsonMappingException$Reference",
+      "serializable": true
     },
     {
       "type": "com.fasterxml.jackson.databind.Module"
@@ -1527,6 +1582,10 @@
       "type": "java.io.Closeable"
     },
     {
+      "type": "java.io.IOException",
+      "serializable": true
+    },
+    {
       "type": "java.io.Serializable"
     },
     {
@@ -1539,6 +1598,10 @@
           "name": "data"
         }
       ]
+    },
+    {
+      "type": "java.lang.AssertionError",
+      "serializable": true
     },
     {
       "type": "java.lang.AutoCloseable"
@@ -1608,10 +1671,16 @@
       "serializable": true
     },
     {
-      "type": "java.lang.Error"
+      "type": "java.lang.Error",
+      "serializable": true
     },
     {
-      "type": "java.lang.Integer"
+      "type": "java.lang.Exception",
+      "serializable": true
+    },
+    {
+      "type": "java.lang.Integer",
+      "serializable": true
     },
     {
       "type": "java.lang.InternalError",
@@ -1663,6 +1732,10 @@
           ]
         }
       ]
+    },
+    {
+      "type": "java.lang.Number",
+      "serializable": true
     },
     {
       "type": "java.lang.Object",
@@ -1726,6 +1799,14 @@
       ]
     },
     {
+      "type": "java.lang.StackTraceElement",
+      "serializable": true
+    },
+    {
+      "type": "java.lang.StackTraceElement[]",
+      "serializable": true
+    },
+    {
       "type": "java.lang.StackWalker"
     },
     {
@@ -1735,7 +1816,8 @@
       "type": "java.lang.StackWalker$StackFrame"
     },
     {
-      "type": "java.lang.String"
+      "type": "java.lang.String",
+      "serializable": true
     },
     {
       "type": "java.lang.String[]"
@@ -1756,7 +1838,8 @@
       "type": "java.lang.Thread$Builder"
     },
     {
-      "type": "java.lang.Throwable"
+      "type": "java.lang.Throwable",
+      "serializable": true
     },
     {
       "type": "java.lang.WeakPairMap"
@@ -2213,10 +2296,19 @@
       "type": "java.util.AbstractList"
     },
     {
-      "type": "java.util.ArrayList"
+      "type": "java.util.ArrayList",
+      "serializable": true
     },
     {
       "type": "java.util.Collection"
+    },
+    {
+      "type": "java.util.Collections$EmptyList",
+      "serializable": true
+    },
+    {
+      "type": "java.util.Collections$SingletonList",
+      "serializable": true
     },
     {
       "type": "java.util.Enumeration"
@@ -2230,6 +2322,10 @@
     },
     {
       "type": "java.util.LinkedHashSet",
+      "serializable": true
+    },
+    {
+      "type": "java.util.LinkedList",
       "serializable": true
     },
     {
@@ -2978,6 +3074,13 @@
           ]
         },
         {
+          "name": "failure",
+          "parameterTypes": [
+            "java.lang.Object",
+            "org.gradle.api.tasks.testing.TestFailure"
+          ]
+        },
+        {
           "name": "started",
           "parameterTypes": [
             "org.gradle.api.internal.tasks.testing.TestDescriptorInternal",
@@ -3066,17 +3169,6 @@
       "type": "org.gradle.internal.file.StatStatistics$Collector"
     },
     {
-      "type": "org.gradle.internal.logging.events.OutputEventListener",
-      "methods": [
-        {
-          "name": "onOutput",
-          "parameterTypes": [
-            "org.gradle.internal.logging.events.OutputEvent"
-          ]
-        }
-      ]
-    },
-    {
       "type": "org.gradle.internal.logging.services.LoggingServiceRegistry",
       "methods": [
         {
@@ -3093,6 +3185,9 @@
     },
     {
       "type": "org.gradle.internal.logging.services.LoggingServiceRegistry$CommandLineLogging"
+    },
+    {
+      "type": "org.gradle.internal.logging.slf4j.StaticLoggerProvider"
     },
     {
       "type": "org.gradle.internal.nativeintegration.filesystem.services.FileSystemServices",
@@ -3152,6 +3247,26 @@
           "parameterTypes": []
         }
       ]
+    },
+    {
+      "type": "org.gradle.internal.serialize.ExceptionPlaceholder",
+      "serializable": true
+    },
+    {
+      "type": "org.gradle.internal.serialize.NestedExceptionPlaceholder",
+      "serializable": true
+    },
+    {
+      "type": "org.gradle.internal.serialize.NestedExceptionPlaceholder$Kind",
+      "serializable": true
+    },
+    {
+      "type": "org.gradle.internal.serialize.StackTraceElementPlaceholder",
+      "serializable": true
+    },
+    {
+      "type": "org.gradle.internal.serialize.TopLevelExceptionPlaceholder",
+      "serializable": true
     },
     {
       "type": "org.gradle.internal.service.MethodHandleBasedServiceMethodFactory",
@@ -3325,6 +3440,9 @@
       "serializable": true
     },
     {
+      "type": "org.junit.platform.launcher.core.LauncherFactory"
+    },
+    {
       "type": "org.junit.platform.launcher.listeners.UniqueIdTrackingListener"
     },
     {
@@ -3448,7 +3566,7 @@
       "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher"
     },
     {
-      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$EE7agjZL",
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$5akXArSW",
       "methods": [
         {
           "name": "<init>",
@@ -3457,7 +3575,7 @@
       ]
     },
     {
-      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$KP946EMA",
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$9aINF0TE",
       "methods": [
         {
           "name": "<init>",
@@ -3466,7 +3584,7 @@
       ]
     },
     {
-      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$PXYhIcrw",
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$E0nSPWIz",
       "methods": [
         {
           "name": "<init>",
@@ -3475,7 +3593,151 @@
       ]
     },
     {
-      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$oSVTrbD0",
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$G1sPQuZD",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$J42MkCu4",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$KQLSd4sl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$NQe0dPP2",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$QVarUnzk",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$RHJANmh9",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$XR4M1N00",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$YLhgNlc9",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$j8KEnPiY",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$l8gKtfiP",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$m1UvzM86",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$mHGGKkKZ",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$pqRO4g4R",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$rrhUpR0h",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$sZDCSroO",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$uMuXFwlP",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.mockito.internal.util.reflection.InstrumentationMemberAccessor$Dispatcher$ByteBuddy$uO8roVaR",
       "methods": [
         {
           "name": "<init>",
@@ -3499,7 +3761,31 @@
       "type": "org.openqa.selenium.WebDriver"
     },
     {
+      "type": "org.opentest4j.AssertionFailedError",
+      "serializable": true,
+      "methods": [
+        {
+          "name": "getActual",
+          "parameterTypes": []
+        },
+        {
+          "name": "getExpected",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "org.opentest4j.TestAbortedException"
+    },
+    {
+      "type": "org.opentest4j.ValueWrapper",
+      "serializable": true,
+      "methods": [
+        {
+          "name": "getValue",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.postgresql.Driver",
@@ -8779,6 +9065,131 @@
       "type": "org.telegram.telegrambots.meta.api.interfaces.Validable"
     },
     {
+      "type": "org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery",
+      "methods": [
+        {
+          "name": "getCacheTime",
+          "parameterTypes": []
+        },
+        {
+          "name": "getCallbackQueryId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getMethod",
+          "parameterTypes": []
+        },
+        {
+          "name": "getShowAlert",
+          "parameterTypes": []
+        },
+        {
+          "name": "getText",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUrl",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.telegram.telegrambots.meta.api.methods.botapimethods.BotApiMethod"
+    },
+    {
+      "type": "org.telegram.telegrambots.meta.api.methods.botapimethods.BotApiMethodBoolean"
+    },
+    {
+      "type": "org.telegram.telegrambots.meta.api.methods.botapimethods.BotApiMethodMessage"
+    },
+    {
+      "type": "org.telegram.telegrambots.meta.api.methods.botapimethods.PartialBotApiMethod"
+    },
+    {
+      "type": "org.telegram.telegrambots.meta.api.methods.send.SendMessage",
+      "methods": [
+        {
+          "name": "getAllowSendingWithoutReply",
+          "parameterTypes": []
+        },
+        {
+          "name": "getChatId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getDisableNotification",
+          "parameterTypes": []
+        },
+        {
+          "name": "getDisableWebPagePreview",
+          "parameterTypes": []
+        },
+        {
+          "name": "getEntities",
+          "parameterTypes": []
+        },
+        {
+          "name": "getLinkPreviewOptions",
+          "parameterTypes": []
+        },
+        {
+          "name": "getMessageThreadId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getMethod",
+          "parameterTypes": []
+        },
+        {
+          "name": "getParseMode",
+          "parameterTypes": []
+        },
+        {
+          "name": "getProtectContent",
+          "parameterTypes": []
+        },
+        {
+          "name": "getReplyMarkup",
+          "parameterTypes": []
+        },
+        {
+          "name": "getReplyParameters",
+          "parameterTypes": []
+        },
+        {
+          "name": "getReplyToMessageId",
+          "parameterTypes": []
+        },
+        {
+          "name": "getText",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.telegram.telegrambots.meta.api.objects.ApiResponse",
+      "fields": [
+        {
+          "name": "errorCode"
+        },
+        {
+          "name": "errorDescription"
+        },
+        {
+          "name": "ok"
+        },
+        {
+          "name": "result"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "org.telegram.telegrambots.meta.api.objects.Audio"
     },
     {
@@ -8815,6 +9226,12 @@
         {
           "name": "getMessage",
           "parameterTypes": []
+        },
+        {
+          "name": "setChatInstance",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
         },
         {
           "name": "setData",
@@ -8999,13 +9416,31 @@
       "type": "org.telegram.telegrambots.meta.api.objects.Chat$ChatBuilder",
       "methods": [
         {
+          "name": "firstName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
           "name": "id",
           "parameterTypes": [
             "java.lang.Long"
           ]
         },
         {
+          "name": "lastName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
           "name": "type",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "userName",
           "parameterTypes": [
             "java.lang.String"
           ]
@@ -9080,16 +9515,49 @@
       "type": "org.telegram.telegrambots.meta.api.objects.MessageAutoDeleteTimerChanged"
     },
     {
-      "type": "org.telegram.telegrambots.meta.api.objects.MessageEntity$MessageEntityBuilder"
+      "type": "org.telegram.telegrambots.meta.api.objects.MessageEntity$MessageEntityBuilder",
+      "methods": [
+        {
+          "name": "length",
+          "parameterTypes": [
+            "java.lang.Integer"
+          ]
+        },
+        {
+          "name": "offset",
+          "parameterTypes": [
+            "java.lang.Integer"
+          ]
+        },
+        {
+          "name": "type",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
     },
     {
-      "type": "org.telegram.telegrambots.meta.api.objects.MessageEntity$MessageEntityBuilderImpl"
+      "type": "org.telegram.telegrambots.meta.api.objects.MessageEntity$MessageEntityBuilderImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "build",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.telegram.telegrambots.meta.api.objects.PhotoSize"
     },
     {
       "type": "org.telegram.telegrambots.meta.api.objects.ProximityAlertTriggered"
+    },
+    {
+      "type": "org.telegram.telegrambots.meta.api.objects.ResponseParameters"
     },
     {
       "type": "org.telegram.telegrambots.meta.api.objects.TextQuote"
@@ -9275,6 +9743,12 @@
         },
         {
           "name": "lastName",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "userName",
           "parameterTypes": [
             "java.lang.String"
           ]
@@ -9787,6 +10261,12 @@
           ]
         },
         {
+          "name": "entities",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        },
+        {
           "name": "from",
           "parameterTypes": [
             "org.telegram.telegrambots.meta.api.objects.User"
@@ -9796,6 +10276,12 @@
           "name": "messageId",
           "parameterTypes": [
             "java.lang.Integer"
+          ]
+        },
+        {
+          "name": "replyMarkup",
+          "parameterTypes": [
+            "org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup"
           ]
         },
         {
@@ -9886,13 +10372,37 @@
       "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.ForceReplyKeyboard"
     },
     {
-      "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup"
+      "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup",
+      "methods": [
+        {
+          "name": "getKeyboard",
+          "parameterTypes": []
+        }
+      ]
     },
     {
-      "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup$InlineKeyboardMarkupBuilder"
+      "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup$InlineKeyboardMarkupBuilder",
+      "methods": [
+        {
+          "name": "keyboard",
+          "parameterTypes": [
+            "java.util.Collection"
+          ]
+        }
+      ]
     },
     {
-      "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup$InlineKeyboardMarkupBuilderImpl"
+      "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup$InlineKeyboardMarkupBuilderImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "build",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard"
@@ -9904,16 +10414,87 @@
       "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove"
     },
     {
-      "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton$InlineKeyboardButtonBuilder"
+      "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton",
+      "methods": [
+        {
+          "name": "getCallbackData",
+          "parameterTypes": []
+        },
+        {
+          "name": "getCallbackGame",
+          "parameterTypes": []
+        },
+        {
+          "name": "getLoginUrl",
+          "parameterTypes": []
+        },
+        {
+          "name": "getPay",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSwitchInlineQuery",
+          "parameterTypes": []
+        },
+        {
+          "name": "getSwitchInlineQueryCurrentChat",
+          "parameterTypes": []
+        },
+        {
+          "name": "getText",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUrl",
+          "parameterTypes": []
+        },
+        {
+          "name": "getWebApp",
+          "parameterTypes": []
+        }
+      ]
     },
     {
-      "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton$InlineKeyboardButtonBuilderImpl"
+      "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton$InlineKeyboardButtonBuilder",
+      "methods": [
+        {
+          "name": "callbackData",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "text",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton$InlineKeyboardButtonBuilderImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "build",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton[]"
     },
     {
-      "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow"
+      "type": "org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.telegram.telegrambots.meta.api.objects.stickers.MaskPosition$MaskPositionBuilder"
@@ -10859,6 +11440,18 @@
       "glob": "META-INF/validation.xml"
     },
     {
+      "glob": "application-default.properties"
+    },
+    {
+      "glob": "application-default.xml"
+    },
+    {
+      "glob": "application-default.yaml"
+    },
+    {
+      "glob": "application-default.yml"
+    },
+    {
       "glob": "application-test.properties"
     },
     {
@@ -10986,6 +11579,18 @@
     },
     {
       "glob": "com/aleksandrmakarov/journals/service/UserServiceImpl.class"
+    },
+    {
+      "glob": "config/application-default.properties"
+    },
+    {
+      "glob": "config/application-default.xml"
+    },
+    {
+      "glob": "config/application-default.yaml"
+    },
+    {
+      "glob": "config/application-default.yml"
     },
     {
       "glob": "config/application-test.properties"

@@ -25,6 +25,7 @@ import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.aleksandrmakarov.journals.config.TestDatabaseInitializer;
 import com.aleksandrmakarov.journals.model.Journal;
@@ -56,6 +57,7 @@ public class WebhookIntegrationTest {
   @Autowired private QuestionRepository questionRepository;
   @Autowired private JournalRepository journalRepository;
   @Autowired private TestJournalsBot testBot;
+  @Autowired private ObjectMapper objectMapper;
 
   // Test user record
   public record TestUser(Long telegramId, String username, String firstName, String lastName) {}
@@ -836,5 +838,559 @@ public class WebhookIntegrationTest {
     response = sendWebhookRequestAndGetResponse(PLAYER, "/last");
     assertContains(response,"Last journal:\n\n📅 ");
     assertContains(response, " 'Session 1':\n(BEFORE) Q1 - A1\n");
+  }
+
+  @Test
+  void test_jsonDeserialization_triggersBuilderMethods() {
+    // This test sends raw JSON payloads matching the actual format Telegram sends in webhook updates
+    // to ensure Jackson deserialization uses builder methods, which the native-image agent needs to capture.
+    // This covers issues met in native image run so far:
+    // - User$UserBuilder.userName(String) - via "username" field in JSON
+    // - Chat$ChatBuilder.firstName(String) - via "first_name" field in JSON
+    //
+    // The payloads match the format received in WebhookController, using camelCase "username" field.
+    
+    int timestamp = (int) (System.currentTimeMillis() / 1000);
+    long playerId = PLAYER.telegramId();
+    
+    // Test payload 1: CallbackQuery with username in both from and chat
+    // This matches the actual format Telegram sends for callback queries
+    String jsonPayload1 = """
+        {
+          "update_id": 1,
+          "callback_query": {
+            "id": "7103611918865400490",
+            "from": {
+              "id": %d,
+              "first_name": "Test",
+              "is_bot": false,
+              "last_name": "User",
+              "username": "testuser",
+              "language_code": "en"
+            },
+            "message": {
+              "message_id": 619,
+              "from": {
+                "id": 8385797027,
+                "first_name": "amjournals",
+                "is_bot": true,
+                "username": "amjournalsbot"
+              },
+              "date": %d,
+              "chat": {
+                "id": %d,
+                "type": "private",
+                "first_name": "TestChat",
+                "last_name": "ChatLastName",
+                "username": "testchat"
+              },
+              "text": "Test message",
+              "reply_markup": {
+                "inline_keyboard": [[{
+                  "text": "Test Button",
+                  "callback_data": "test:data"
+                }], [{
+                  "text": "Cancel",
+                  "callback_data": "ps:cancel"
+                }]]
+              }
+            },
+            "data": "ps:cancel",
+            "chat_instance": "1351648298235224897"
+          }
+        }
+        """.formatted(playerId, timestamp, playerId);
+
+    // Test payload 2: Message with username in both from and chat, with entities
+    String jsonPayload2 = """
+        {
+          "update_id": 2,
+          "message": {
+            "message_id": 620,
+            "from": {
+              "id": %d,
+              "first_name": "Test",
+              "is_bot": false,
+              "last_name": "User",
+              "username": "testuser",
+              "language_code": "en"
+            },
+            "date": %d,
+            "chat": {
+              "id": %d,
+              "type": "private",
+              "first_name": "TestChat",
+              "last_name": "ChatLastName",
+              "username": "testchat"
+            },
+            "text": "/last",
+            "entities": [{
+              "type": "bot_command",
+              "offset": 0,
+              "length": 5
+            }]
+          }
+        }
+        """.formatted(playerId, timestamp, playerId);
+
+    // Test payload 3: Another CallbackQuery with username in both from and chat
+    String jsonPayload3 = """
+        {
+          "update_id": 3,
+          "callback_query": {
+            "id": "7103611920246976766",
+            "from": {
+              "id": %d,
+              "first_name": "Test",
+              "is_bot": false,
+              "last_name": "User",
+              "username": "testuser",
+              "language_code": "en"
+            },
+            "message": {
+              "message_id": 621,
+              "from": {
+                "id": 8385797027,
+                "first_name": "amjournals",
+                "is_bot": true,
+                "username": "amjournalsbot"
+              },
+              "date": %d,
+              "chat": {
+                "id": %d,
+                "type": "private",
+                "first_name": "TestChat",
+                "last_name": "ChatLastName",
+                "username": "testchat"
+              },
+              "text": "Test message",
+              "reply_markup": {
+                "inline_keyboard": [[{
+                  "text": "Test Button",
+                  "callback_data": "test:data"
+                }], [{
+                  "text": "Cancel",
+                  "callback_data": "ps:cancel"
+                }]]
+              }
+            },
+            "data": "ps:select:1",
+            "chat_instance": "1351648298235224897"
+          }
+        }
+        """.formatted(playerId, timestamp, playerId);
+
+    // Test payload 4: Message with username in both from and chat, with entities
+    String jsonPayload4 = """
+        {
+          "update_id": 4,
+          "message": {
+            "message_id": 623,
+            "from": {
+              "id": %d,
+              "first_name": "Test",
+              "is_bot": false,
+              "last_name": "User",
+              "username": "testuser",
+              "language_code": "en"
+            },
+            "date": %d,
+            "chat": {
+              "id": %d,
+              "type": "private",
+              "first_name": "TestChat",
+              "last_name": "ChatLastName",
+              "username": "testchat"
+            },
+            "text": "/start",
+            "entities": [{
+              "type": "bot_command",
+              "offset": 0,
+              "length": 6
+            }]
+          }
+        }
+        """.formatted(playerId, timestamp, playerId);
+
+    // First, directly deserialize JSON payloads using ObjectMapper to ensure builder methods are called
+    // This helps the agent capture builder method calls that might not be triggered via webhook
+    try {
+      // Deserialize payload 1 (CallbackQuery) to trigger userName() builder in callback_query.from
+      Update update1 = objectMapper.readValue(jsonPayload1, Update.class);
+      assertNotNull(update1, "Update1 should not be null");
+      assertNotNull(update1.getCallbackQuery(), "CallbackQuery1 should not be null");
+      assertNotNull(update1.getCallbackQuery().getFrom(), "From User1 should not be null");
+      assertEquals("testuser", update1.getCallbackQuery().getFrom().getUserName(), "Username1 should match");
+      
+      // Deserialize payload 2 (Message) to trigger userName() builder in message.from
+      Update update2 = objectMapper.readValue(jsonPayload2, Update.class);
+      assertNotNull(update2, "Update2 should not be null");
+      assertNotNull(update2.getMessage(), "Message2 should not be null");
+      assertNotNull(update2.getMessage().getFrom(), "From User2 should not be null");
+      assertEquals("testuser", update2.getMessage().getFrom().getUserName(), "Username2 should match");
+      
+      // Deserialize payload 4 (Message) to trigger userName() builder
+      Update update4 = objectMapper.readValue(jsonPayload4, Update.class);
+      assertNotNull(update4, "Update4 should not be null");
+      assertNotNull(update4.getMessage(), "Message4 should not be null");
+      assertNotNull(update4.getMessage().getFrom(), "From User4 should not be null");
+      assertEquals("testuser", update4.getMessage().getFrom().getUserName(), "Username4 should match");
+    } catch (Exception e) {
+      throw new AssertionError("Failed to deserialize JSON payloads: " + e.getMessage(), e);
+    }
+
+    // Send all payloads through the webhook endpoint to trigger builder methods via Spring's ObjectMapper
+    // This ensures the agent captures builder method calls during actual webhook processing
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    
+    // Send payload 1: CallbackQuery with username in both from and chat
+    HttpEntity<String> request1 = new HttpEntity<>(jsonPayload1, headers);
+    ResponseEntity<String> response1 = restTemplate.exchange("/webhook", HttpMethod.POST, request1, String.class);
+    assertEquals("OK", response1.getBody());
+    
+    // Send payload 2: Message with username in both from and chat
+    HttpEntity<String> request2 = new HttpEntity<>(jsonPayload2, headers);
+    ResponseEntity<String> response2 = restTemplate.exchange("/webhook", HttpMethod.POST, request2, String.class);
+    assertEquals("OK", response2.getBody());
+    
+    // Send payload 3: Another CallbackQuery with username in both from and chat
+    HttpEntity<String> request3 = new HttpEntity<>(jsonPayload3, headers);
+    ResponseEntity<String> response3 = restTemplate.exchange("/webhook", HttpMethod.POST, request3, String.class);
+    assertEquals("OK", response3.getBody());
+    
+    // Send payload 4: Message with username in both from and chat to ensure userName() builder is triggered
+    HttpEntity<String> request4 = new HttpEntity<>(jsonPayload4, headers);
+    ResponseEntity<String> response4 = restTemplate.exchange("/webhook", HttpMethod.POST, request4, String.class);
+    assertEquals("OK", response4.getBody());
+    String botResponse4 = testBot.getLastResponse();
+    assertContains(
+        botResponse4,
+        "Welcome to AM Journals Bot. Use /before and /after to answer questions before and after the session. Use /admins to see list of admins.");
+  }
+
+  @Test
+  void test_apiResponseDeserialization_triggersReflectionHints() {
+    // This test deserializes ApiResponse JSON to ensure the native-image agent captures
+    // reflection hints for org.telegram.telegrambots.meta.api.objects.ApiResponse.
+    // This covers the issue where sending messages to Telegram fails with:
+    // "Cannot construct instance of `org.telegram.telegrambots.meta.api.objects.ApiResponse`"
+    // and "Cannot reflectively read or write field 'errorCode'"
+    //
+    // The ApiResponse is the wrapper that Telegram API returns when sending messages.
+    // It contains the actual response object (e.g., Message), an "ok" boolean, and optionally "errorCode".
+    
+    // Sample ApiResponse JSON that Telegram returns when sending messages (success cases)
+    // These match the actual format returned by Telegram Bot API
+    String apiResponseJsonSuccess1 = """
+        {
+          "ok": true,
+          "result": {
+            "message_id": 123,
+            "from": {
+              "id": 8385797027,
+              "is_bot": true,
+              "first_name": "amjournals",
+              "username": "amjournalsbot"
+            },
+            "chat": {
+              "id": 1653938535,
+              "type": "private",
+              "first_name": "Alexander",
+              "last_name": "Makarov",
+              "username": "username"
+            },
+            "date": 1762432512,
+            "text": "📋 <b>Admins:</b>some"
+          }
+        }
+        """;
+    
+    String apiResponseJsonSuccess2 = """
+        {
+          "ok": true,
+          "result": {
+            "message_id": 124,
+            "from": {
+              "id": 8385797027,
+              "is_bot": true,
+              "first_name": "amjournals",
+              "username": "amjournalsbot"
+            },
+            "chat": {
+              "id": 1653938535,
+              "type": "private",
+              "first_name": "Alexander",
+              "last_name": "Makarov",
+              "username": "username"
+            },
+            "date": 1762432513,
+            "text": "Last journal\\n[1-1/1]",
+            "reply_markup": {
+              "inline_keyboard": [[{
+                "text": "some - 2",
+                "callback_data": "ps:select:1"
+              }], [{
+                "text": "Cancel",
+                "callback_data": "ps:cancel"
+              }]]
+            }
+          }
+        }
+        """;
+    
+    String apiResponseJsonSuccess3 = """
+        {
+          "ok": true,
+          "result": true
+        }
+        """;
+    
+    String apiResponseJsonSuccess4 = """
+        {
+          "ok": true,
+          "result": {
+            "message_id": 125,
+            "from": {
+              "id": 8385797027,
+              "is_bot": true,
+              "first_name": "amjournals",
+              "username": "amjournalsbot"
+            },
+            "chat": {
+              "id": 1653938535,
+              "type": "private",
+              "first_name": "Alexander",
+              "last_name": "Makarov",
+              "username": "username"
+            },
+            "date": 1762432514,
+            "text": "Last journal:\\n\\n📅 2025-11-05 10:58:11 'test 2':\\n(BEFORE) Modified Before q - 21 answer\\n"
+          }
+        }
+        """;
+    
+    // Sample ApiResponse JSON with errorCode field (error case)
+    // This ensures the errorCode field is also captured by the native agent
+    // This matches the actual error format that Telegram returns
+    String apiResponseJsonError = """
+        {
+          "ok": false,
+          "error_code": 400,
+          "description": "Bad Request: message text is empty"
+        }
+        """;
+    
+    // Deserialize ApiResponse using ObjectMapper to trigger reflection hints
+    // This ensures the native agent captures the constructor/deserializer and fields for ApiResponse
+    try {
+      // Deserialize success response 1: Simple message
+      var typeRefMessage = new com.fasterxml.jackson.core.type.TypeReference<org.telegram.telegrambots.meta.api.objects.ApiResponse<org.telegram.telegrambots.meta.api.objects.message.Message>>() {};
+      org.telegram.telegrambots.meta.api.objects.ApiResponse<org.telegram.telegrambots.meta.api.objects.message.Message> apiResponseSuccess1 = 
+          objectMapper.readValue(apiResponseJsonSuccess1, typeRefMessage);
+      
+      assertNotNull(apiResponseSuccess1, "ApiResponse success1 should not be null");
+      assertTrue(apiResponseSuccess1.getOk(), "ApiResponse1 should be ok");
+      assertNotNull(apiResponseSuccess1.getResult(), "ApiResponse1 result should not be null");
+      assertEquals(123, apiResponseSuccess1.getResult().getMessageId(), "Message ID1 should match");
+      assertTrue(apiResponseSuccess1.getResult().getText().contains("Admins"), "Message text1 should contain expected content");
+      
+      // Deserialize success response 2: Message with inline keyboard
+      org.telegram.telegrambots.meta.api.objects.ApiResponse<org.telegram.telegrambots.meta.api.objects.message.Message> apiResponseSuccess2 = 
+          objectMapper.readValue(apiResponseJsonSuccess2, typeRefMessage);
+      
+      assertNotNull(apiResponseSuccess2, "ApiResponse success2 should not be null");
+      assertTrue(apiResponseSuccess2.getOk(), "ApiResponse2 should be ok");
+      assertNotNull(apiResponseSuccess2.getResult(), "ApiResponse2 result should not be null");
+      assertEquals(124, apiResponseSuccess2.getResult().getMessageId(), "Message ID2 should match");
+      assertNotNull(apiResponseSuccess2.getResult().getReplyMarkup(), "Reply markup should not be null");
+      
+      // Deserialize success response 3: Boolean result (for answerCallbackQuery)
+      var typeRefBoolean = new com.fasterxml.jackson.core.type.TypeReference<org.telegram.telegrambots.meta.api.objects.ApiResponse<Boolean>>() {};
+      org.telegram.telegrambots.meta.api.objects.ApiResponse<Boolean> apiResponseSuccess3 = 
+          objectMapper.readValue(apiResponseJsonSuccess3, typeRefBoolean);
+      
+      assertNotNull(apiResponseSuccess3, "ApiResponse success3 should not be null");
+      assertTrue(apiResponseSuccess3.getOk(), "ApiResponse3 should be ok");
+      assertNotNull(apiResponseSuccess3.getResult(), "ApiResponse3 result should not be null");
+      assertTrue(apiResponseSuccess3.getResult(), "Result3 should be true");
+      
+      // Deserialize success response 4: Another message
+      org.telegram.telegrambots.meta.api.objects.ApiResponse<org.telegram.telegrambots.meta.api.objects.message.Message> apiResponseSuccess4 = 
+          objectMapper.readValue(apiResponseJsonSuccess4, typeRefMessage);
+      
+      assertNotNull(apiResponseSuccess4, "ApiResponse success4 should not be null");
+      assertTrue(apiResponseSuccess4.getOk(), "ApiResponse4 should be ok");
+      assertNotNull(apiResponseSuccess4.getResult(), "ApiResponse4 result should not be null");
+      assertEquals(125, apiResponseSuccess4.getResult().getMessageId(), "Message ID4 should match");
+      
+      // Deserialize error response to trigger errorCode field access
+      org.telegram.telegrambots.meta.api.objects.ApiResponse<org.telegram.telegrambots.meta.api.objects.message.Message> apiResponseError = 
+          objectMapper.readValue(apiResponseJsonError, typeRefMessage);
+      
+      assertNotNull(apiResponseError, "ApiResponse error should not be null");
+      assertTrue(!apiResponseError.getOk(), "ApiResponse should not be ok");
+      // Access errorCode field to ensure reflection hints are captured
+      Integer errorCode = apiResponseError.getErrorCode();
+      assertNotNull(errorCode, "ErrorCode should not be null");
+      assertEquals(400, errorCode.intValue(), "Error code should match");
+      
+      // Simulate what the library does when it encounters an error response:
+      // It throws a TelegramApiRequestException with the error details.
+      // This ensures reflection hints are captured for the exception constructor.
+      // The library constructs the exception with format: "Error executing {method} query: [{errorCode}] {description}"
+      if (!apiResponseError.getOk() && apiResponseError.getErrorCode() != null) {
+        // Construct TelegramApiRequestException to trigger reflection hints for exception class
+        // This matches what PartialBotApiMethod.deserializeResponseInternal does at line 59
+        // The exception is constructed with a message that includes the full method name and error details
+        String methodName = "org.telegram.telegrambots.meta.api.methods.send.SendMessage";
+        String errorMessage = "Error executing " + methodName + " query: [" + apiResponseError.getErrorCode() + "] Bad Request: message text is empty";
+        org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException exception = 
+            new org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException(errorMessage);
+        assertNotNull(exception, "TelegramApiRequestException should be constructed");
+        // Access the exception's message to ensure reflection hints are captured
+        assertNotNull(exception.getMessage(), "Exception message should not be null");
+        assertTrue(exception.getMessage().contains("400"), "Exception message should contain error code");
+        assertTrue(exception.getMessage().contains("Bad Request: message text is empty"), 
+            "Exception message should contain error description");
+      }
+    } catch (Exception e) {
+      throw new AssertionError("Failed to deserialize ApiResponse: " + e.getMessage(), e);
+    }
+  }
+
+  @Test
+  void test_sendMessageSerialization_triggersReflectionHints() {
+    // This test serializes SendMessage objects to ensure the native-image agent captures
+    // reflection hints for serializing SendMessage when sending messages to Telegram.
+    // This covers the issue where sending messages to Telegram fails with:
+    // "Bad Request: message text is empty" because the text field is not serialized.
+    //
+    // The SendMessage object needs to be serialized to JSON when sending to Telegram API.
+    // The native image needs reflection hints to access fields like text, chatId, parseMode, replyMarkup.
+    
+    try {
+      // Create SendMessage objects matching what the application creates
+      // This ensures all fields used by the application are captured
+      
+      // SendMessage 1: Simple message with text and chatId (most common case)
+      org.telegram.telegrambots.meta.api.methods.send.SendMessage sendMessage1 = 
+          org.telegram.telegrambots.meta.api.methods.send.SendMessage.builder()
+              .chatId("1653938535")
+              .text("📋 <b>Admins:</b>\n👤 Alexander Makarov (@i4ellendger)")
+              .parseMode("HTML")
+              .build();
+      
+      // Serialize SendMessage1 to JSON to trigger reflection hints for serialization
+      String json1 = objectMapper.writeValueAsString(sendMessage1);
+      assertNotNull(json1, "Serialized JSON1 should not be null");
+      assertTrue(json1.contains("1653938535"), "JSON1 should contain chatId");
+      assertTrue(json1.contains("Admins"), "JSON1 should contain message text");
+      assertTrue(json1.contains("HTML"), "JSON1 should contain parseMode");
+      
+      // SendMessage 2: Message with inline keyboard (replyMarkup)
+      org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton button = 
+          org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton.builder()
+              .text("Button 1")
+              .callbackData("callback1")
+              .build();
+      org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow row = 
+          new org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow(
+              java.util.List.of(button));
+      org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup inlineKeyboard = 
+          org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup.builder()
+              .keyboard(java.util.List.of(row))
+              .build();
+      
+      org.telegram.telegrambots.meta.api.methods.send.SendMessage sendMessage2 = 
+          org.telegram.telegrambots.meta.api.methods.send.SendMessage.builder()
+              .chatId("1653938535")
+              .text("Test message with keyboard")
+              .parseMode("HTML")
+              .replyMarkup(inlineKeyboard)
+              .build();
+      
+      // Serialize SendMessage2 to JSON to trigger reflection hints for replyMarkup serialization
+      String json2 = objectMapper.writeValueAsString(sendMessage2);
+      assertNotNull(json2, "Serialized JSON2 should not be null");
+      assertTrue(json2.contains("1653938535"), "JSON2 should contain chatId");
+      assertTrue(json2.contains("Test message"), "JSON2 should contain message text");
+      assertTrue(json2.contains("reply_markup") || json2.contains("replyMarkup"), 
+          "JSON2 should contain replyMarkup");
+      
+      // SendMessage 3: Message without parseMode (default case)
+      org.telegram.telegrambots.meta.api.methods.send.SendMessage sendMessage3 = 
+          org.telegram.telegrambots.meta.api.methods.send.SendMessage.builder()
+              .chatId("123456789")
+              .text("Simple message without HTML")
+              .build();
+      
+      // Serialize SendMessage3 to JSON
+      String json3 = objectMapper.writeValueAsString(sendMessage3);
+      assertNotNull(json3, "Serialized JSON3 should not be null");
+      assertTrue(json3.contains("123456789"), "JSON3 should contain chatId");
+      assertTrue(json3.contains("Simple message"), "JSON3 should contain message text");
+      
+      // SendMessage 4: Message with special characters and HTML entities
+      org.telegram.telegrambots.meta.api.methods.send.SendMessage sendMessage4 = 
+          org.telegram.telegrambots.meta.api.methods.send.SendMessage.builder()
+              .chatId("1653938535")
+              .text("Last journal:\n\n📅 2025-11-05 10:58:11 'test 2':\n(BEFORE) Modified Before q - 21 answer\n")
+              .parseMode("HTML")
+              .build();
+      
+      // Serialize SendMessage4 to JSON
+      String json4 = objectMapper.writeValueAsString(sendMessage4);
+      assertNotNull(json4, "Serialized JSON4 should not be null");
+      assertTrue(json4.contains("1653938535"), "JSON4 should contain chatId");
+      assertTrue(json4.contains("Last journal"), "JSON4 should contain message text");
+      
+      // Verify that all SendMessage objects have the text field accessible
+      // This ensures reflection hints are captured for the text field getter
+      assertNotNull(sendMessage1.getText(), "SendMessage1 text should not be null");
+      assertNotNull(sendMessage2.getText(), "SendMessage2 text should not be null");
+      assertNotNull(sendMessage3.getText(), "SendMessage3 text should not be null");
+      assertNotNull(sendMessage4.getText(), "SendMessage4 text should not be null");
+      
+      // Verify chatId is accessible
+      assertNotNull(sendMessage1.getChatId(), "SendMessage1 chatId should not be null");
+      assertNotNull(sendMessage2.getChatId(), "SendMessage2 chatId should not be null");
+      assertNotNull(sendMessage3.getChatId(), "SendMessage3 chatId should not be null");
+      assertNotNull(sendMessage4.getChatId(), "SendMessage4 chatId should not be null");
+      
+      // Also test AnswerCallbackQuery serialization since it's used in the application
+      // AnswerCallbackQuery 1: Simple answer without text
+      org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery answerCallbackQuery1 = 
+          org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery.builder()
+              .callbackQueryId("query123")
+              .build();
+      
+      // Serialize AnswerCallbackQuery1 to JSON
+      String answerJson1 = objectMapper.writeValueAsString(answerCallbackQuery1);
+      assertNotNull(answerJson1, "Serialized AnswerCallbackQuery JSON1 should not be null");
+      assertTrue(answerJson1.contains("query123"), "AnswerCallbackQuery JSON1 should contain callbackQueryId");
+      
+      // AnswerCallbackQuery 2: Answer with text and showAlert
+      org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery answerCallbackQuery2 = 
+          org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery.builder()
+              .callbackQueryId("query456")
+              .text("Error message")
+              .showAlert(true)
+              .build();
+      
+      // Serialize AnswerCallbackQuery2 to JSON
+      String answerJson2 = objectMapper.writeValueAsString(answerCallbackQuery2);
+      assertNotNull(answerJson2, "Serialized AnswerCallbackQuery JSON2 should not be null");
+      assertTrue(answerJson2.contains("query456"), "AnswerCallbackQuery JSON2 should contain callbackQueryId");
+      assertTrue(answerJson2.contains("Error message"), "AnswerCallbackQuery JSON2 should contain text");
+      
+      // Verify that AnswerCallbackQuery fields are accessible
+      assertNotNull(answerCallbackQuery1.getCallbackQueryId(), "AnswerCallbackQuery1 callbackQueryId should not be null");
+      assertNotNull(answerCallbackQuery2.getCallbackQueryId(), "AnswerCallbackQuery2 callbackQueryId should not be null");
+      assertNotNull(answerCallbackQuery2.getText(), "AnswerCallbackQuery2 text should not be null");
+      
+    } catch (Exception e) {
+      throw new AssertionError("Failed to serialize SendMessage/AnswerCallbackQuery: " + e.getMessage(), e);
+    }
   }
 }

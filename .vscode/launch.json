@@ -10,6 +10,12 @@
             "request": "attach",
             "hostName": "localhost",
             "port": 5005,
+            "projectName": "tgjournals",
+            "sourcePaths": [
+                "${workspaceFolder}/src/main/java",
+                "${workspaceFolder}/src/test/java",
+                "${workspaceFolder}"
+            ],
             "preLaunchTask": "gradle: bootRun-debug",
             "postDebugTask": "gradle: stop-bootRun"
         },
@@ -18,7 +24,13 @@
             "name": "Attach to Gradle bootRun",
             "request": "attach",
             "hostName": "localhost",
-            "port": 5005
+            "port": 5005,
+            "projectName": "tgjournals",
+            "sourcePaths": [
+                "${workspaceFolder}/src/main/java",
+                "${workspaceFolder}/src/test/java",
+                "${workspaceFolder}"
+            ]
         },
         {
             "type": "java",
