@@ -485,14 +485,14 @@ public class BotCommandHandler {
 		return BotResponse.text(formatJournalsForDisplay("bot.journals.last50", journals, locale));
 	}
 
-	private String handleAdminsCommand(User unused, String locale) {
+	private String handleAdminsCommand(@SuppressWarnings("unused") User unused, String locale) {
 		List<User> admins = userService.getAdmins();
 		if (admins.isEmpty()) {
 			return translationService.t("bot.admins.not_found", locale);
 		}
 		StringBuilder response = new StringBuilder(translationService.t("bot.admins.title", locale)).append("\n");
 		for (User admin : admins) {
-			response.append(translationService.t("bot.admins.entry", locale, admin.getDisplayName()));
+			response.append(translationService.t("bot.admins.entry", locale, admin.getDisplayName())).append("\n");
 		}
 		return response.toString();
 	}

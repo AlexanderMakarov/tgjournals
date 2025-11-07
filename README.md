@@ -465,6 +465,7 @@ make health            # Check local application health
 # Roadmap/TODO
 
 - [x] Add support for localization + Russian.
+- [ ] Fix removing old images from GCP Artifact Registry.
 - [ ] Add multiple teams.
 - [ ] Send notifications to players about new sessions (to avoid spam players can just delete bot - journals will stay anyway).
 - [ ] Auto-remove old journals or extend ability to view them.
