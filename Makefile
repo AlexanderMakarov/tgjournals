@@ -357,9 +357,8 @@ native-run: ## Run native image locally (with local database)
 	@echo "Running native image locally..."
 	@./build/native/nativeCompile/tg-journals
 
-.PHONY: full-deploy
-full-deploy: native-build docker-build gcp-deploy ## Complete deployment pipeline
-	@echo "✅ Full deployment pipeline completed!"
+.PHONY: native-rebuild-check
+native-rebuild-check: test-update-native-hints native-build native-run ## Rebuild hints, build native image and run it locally.
 
 .PHONY: deploy
 deploy: docker-build gcp-deploy ## Rebuild Docker image (includes native image) and deploy to GCP
@@ -367,3 +366,7 @@ deploy: docker-build gcp-deploy ## Rebuild Docker image (includes native image) 
 	@echo ""
 	@echo "💡 Note: If you've added new reflection/resource access patterns,"
 	@echo "   run 'make test-update-native-hints' first, commit the updated hints, then deploy again."
+
+.PHONY: full-deploy
+deploy-with-hints: test-update-native-hints docker-build gcp-deploy ## Complete deployment pipeline.
+	@echo "✅ Full deployment pipeline completed!"

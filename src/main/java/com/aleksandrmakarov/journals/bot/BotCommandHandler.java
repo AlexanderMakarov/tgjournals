@@ -3,6 +3,7 @@ package com.aleksandrmakarov.journals.bot;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -24,6 +25,7 @@ import com.aleksandrmakarov.journals.model.StateType;
 import com.aleksandrmakarov.journals.model.User;
 import com.aleksandrmakarov.journals.model.UserRole;
 import com.aleksandrmakarov.journals.security.ForbiddenException;
+import com.aleksandrmakarov.journals.service.HealthService;
 import com.aleksandrmakarov.journals.service.JournalService;
 import com.aleksandrmakarov.journals.service.SessionService;
 import com.aleksandrmakarov.journals.service.TranslationService;
@@ -54,6 +56,9 @@ public class BotCommandHandler {
 
 	@Autowired
 	private TranslationService translationService;
+
+	@Autowired
+	private HealthService healthService;
 
 	public static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -233,6 +238,9 @@ public class BotCommandHandler {
 			case "/session" :
 				return BotResponse.text(handleSessionCommand(user, messageText, locale));
 
+			case "/status" :
+				return BotResponse.text(handleStatusCommand(user, locale));
+
 			default :
 				if (messageText.startsWith("/")) {
 					return BotResponse.text(translationService.t("bot.command.unknown", locale));
@@ -253,7 +261,8 @@ public class BotCommandHandler {
 					.append("\n");
 			help.append("/promote - ").append(translationService.t("bot.help.admin.promote", locale)).append("\n");
 			help.append("/ban - ").append(translationService.t("bot.help.admin.ban", locale)).append("\n");
-			help.append("/unban - ").append(translationService.t("bot.help.admin.unban", locale)).append("\n\n");
+			help.append("/unban - ").append(translationService.t("bot.help.admin.unban", locale)).append("\n");
+			help.append("/status - ").append(translationService.t("bot.help.admin.status", locale)).append("\n\n");
 		}
 
 		help.append(translationService.t("bot.help.player.title", locale)).append("\n");
@@ -265,6 +274,30 @@ public class BotCommandHandler {
 		help.append("/admins - ").append(translationService.t("bot.help.player.admins", locale));
 
 		return help.toString();
+	}
+
+	/**
+	 * Handles the `/status` command. Only for admins. Returns health status
+	 * information as text.
+	 */
+	private String handleStatusCommand(User user, String locale) {
+		requireAdmin(user, locale);
+		Map<String, Object> healthStatus = healthService.getHealthStatus();
+		StringBuilder response = new StringBuilder();
+		response.append("📊 <b>Service Status</b>\n\n");
+		for (Map.Entry<String, Object> entry : healthStatus.entrySet()) {
+			String key = capitalizeFirst(entry.getKey());
+			Object value = entry.getValue();
+			response.append(key).append(": ").append(value != null ? value.toString() : "null").append("\n");
+		}
+		return response.toString().trim();
+	}
+
+	private String capitalizeFirst(String str) {
+		if (str == null || str.isEmpty()) {
+			return str;
+		}
+		return str.substring(0, 1).toUpperCase() + str.substring(1);
 	}
 
 	/**
